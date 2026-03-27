@@ -1,0 +1,77 @@
+A Practical Guide to Python Programming
+
+Python is a high-level, interpreted programming language known for its clean syntax and readability. Created by Guido van Rossum and first released in 1991, Python has grown to become one of the most popular programming languages in the world. Its design philosophy emphasizes code readability with the use of significant indentation.
+
+Variables and Data Types
+
+Python is dynamically typed, meaning you do not need to declare the type of a variable when you create it. The interpreter infers the type at runtime. Python supports several built-in data types including integers, floating-point numbers, strings, booleans, lists, tuples, dictionaries, and sets.
+
+Strings in Python are immutable sequences of characters. You can create them using single quotes, double quotes, or triple quotes for multi-line strings. Python provides extensive string methods like split(), join(), strip(), replace(), and format(). F-strings, introduced in Python 3.6, provide a concise way to embed expressions inside string literals using curly braces.
+
+Lists are ordered, mutable collections that can hold items of different types. You can access elements by index, slice lists to get sublists, and use methods like append(), extend(), insert(), remove(), and sort(). Lists are one of the most versatile data structures in Python.
+
+Dictionaries are unordered collections of key-value pairs. Keys must be immutable (strings, numbers, or tuples), while values can be any type. Dictionaries provide O(1) average-case lookup time, making them ideal for storing and retrieving data by a known key. Common methods include get(), keys(), values(), items(), update(), and pop().
+
+Control Flow
+
+Python uses if, elif, and else statements for conditional execution. Unlike many languages, Python uses indentation rather than braces to define code blocks. This makes the code visually clean but requires consistent indentation.
+
+For loops in Python iterate over sequences (lists, tuples, strings, ranges). The range() function generates a sequence of numbers and is commonly used with for loops. Python also supports while loops, which continue executing as long as a condition is true.
+
+List Comprehensions
+
+List comprehensions provide a concise way to create lists based on existing lists or other iterables. The syntax is [expression for item in iterable if condition]. For example, [x**2 for x in range(10) if x % 2 == 0] creates a list of squares of even numbers from 0 to 9. This is more readable and often faster than the equivalent for loop.
+
+Dictionary comprehensions work similarly: {key: value for item in iterable}. Set comprehensions use curly braces without the colon: {expression for item in iterable}.
+
+Functions
+
+Functions are defined using the def keyword. Python supports default parameter values, keyword arguments, and variable-length argument lists using *args and **kwargs. Functions are first-class objects in Python, meaning they can be passed as arguments, returned from other functions, and assigned to variables.
+
+Lambda functions are small anonymous functions defined with the lambda keyword. They can have any number of arguments but only one expression. They are often used with functions like map(), filter(), and sorted().
+
+Decorators are a powerful feature that allows you to modify the behavior of functions or classes. A decorator is a function that takes another function as input and returns a modified version. The @decorator syntax is syntactic sugar for function = decorator(function).
+
+Object-Oriented Programming
+
+Python supports object-oriented programming with classes and inheritance. Classes are defined using the class keyword. The __init__ method is the constructor, called when an object is created. The self parameter refers to the instance being created.
+
+Inheritance allows a class to inherit attributes and methods from a parent class. Python supports multiple inheritance, where a class can inherit from multiple parent classes. The Method Resolution Order (MRO) determines which method is called when multiple parent classes define the same method.
+
+Python uses special methods (also called dunder methods) to define how objects behave with built-in operations. For example, __str__ defines the string representation, __len__ defines behavior for len(), __getitem__ enables indexing, and __add__ enables the + operator.
+
+Error Handling
+
+Python uses try/except blocks for error handling. You can catch specific exceptions or use a bare except to catch all exceptions (though this is discouraged). The else clause runs if no exception occurred, and the finally clause always runs regardless of whether an exception occurred.
+
+You can define custom exceptions by creating a class that inherits from Exception or one of its subclasses. Raising exceptions is done with the raise keyword.
+
+Modules and Packages
+
+Python organizes code into modules (single files) and packages (directories with an __init__.py file). The import statement loads modules, and you can use from module import name to import specific items. Python's standard library includes modules for file I/O, regular expressions, networking, databases, and much more.
+
+Virtual environments isolate project dependencies. The venv module creates lightweight virtual environments, and pip is the standard package installer. The requirements.txt file lists project dependencies and their versions.
+
+File Handling
+
+Python provides built-in functions for reading and writing files. The open() function returns a file object, and you should always use it with a context manager (the with statement) to ensure proper cleanup. Files can be opened in text mode or binary mode.
+
+The pathlib module provides an object-oriented interface to filesystem paths. It is generally preferred over the older os.path module for path manipulation.
+
+Iterators and Generators
+
+An iterator is an object that implements the __iter__ and __next__ methods. Many Python objects are iterable, including lists, tuples, dictionaries, and strings. The iter() function returns an iterator from an iterable, and next() retrieves the next item.
+
+Generators are a simple way to create iterators using functions with the yield keyword. When a generator function is called, it returns a generator object without executing the function body. Each call to next() executes until the next yield statement. Generators are memory-efficient because they produce values one at a time rather than storing them all in memory.
+
+Generator expressions are similar to list comprehensions but use parentheses instead of square brackets: (expression for item in iterable). They are lazy, meaning they compute values on demand.
+
+Context Managers
+
+Context managers manage resources like files, network connections, and locks. They implement the __enter__ and __exit__ methods and are used with the with statement. The contextlib module provides utilities for creating context managers, including the @contextmanager decorator.
+
+Type Hints
+
+Python 3.5 introduced type hints, which allow you to annotate function parameters and return types. While Python remains dynamically typed at runtime, type hints enable static type checkers like mypy to catch type errors before running the code. Common type annotations include int, str, float, bool, list[int], dict[str, int], Optional[str], and Union[int, str].
+
+The typing module provides more advanced type constructs like TypeVar, Generic, Protocol, and TypedDict. Type hints improve code documentation and IDE support, making large codebases easier to maintain.

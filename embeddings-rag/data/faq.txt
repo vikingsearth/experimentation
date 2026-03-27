@@ -1,0 +1,43 @@
+Frequently Asked Questions About Machine Learning
+
+Q: What is machine learning?
+A: Machine learning is a subset of artificial intelligence that enables systems to learn and improve from experience without being explicitly programmed. It focuses on developing algorithms that can access data, learn from it, and make predictions or decisions. The three main types are supervised learning, unsupervised learning, and reinforcement learning.
+
+Q: What is the difference between supervised and unsupervised learning?
+A: Supervised learning uses labeled training data where the correct output is known. The model learns to map inputs to outputs. Examples include classification (predicting categories) and regression (predicting continuous values). Unsupervised learning works with unlabeled data and tries to find hidden patterns or structure. Examples include clustering, dimensionality reduction, and anomaly detection.
+
+Q: What is a neural network?
+A: A neural network is a computing system inspired by biological neural networks in the human brain. It consists of layers of interconnected nodes (neurons) that process information. Each connection has a weight that is adjusted during training. A typical neural network has an input layer, one or more hidden layers, and an output layer. Deep learning refers to neural networks with many hidden layers.
+
+Q: What is overfitting and how do you prevent it?
+A: Overfitting occurs when a model learns the training data too well, including its noise and outliers, and performs poorly on new unseen data. Prevention techniques include: using more training data, simplifying the model (fewer parameters), regularization (L1/L2), dropout (randomly disabling neurons during training), early stopping (halting training when validation performance degrades), cross-validation, and data augmentation.
+
+Q: What is a transformer model?
+A: Transformers are a neural network architecture introduced in the 2017 paper "Attention Is All You Need." They use self-attention mechanisms to process all positions in a sequence simultaneously, rather than sequentially like RNNs. This parallelization makes them much faster to train. Transformers are the foundation of modern language models like GPT, BERT, and T5. The key innovation is the attention mechanism, which allows the model to weigh the importance of different parts of the input when producing each part of the output.
+
+Q: What are embeddings?
+A: Embeddings are dense vector representations of data (usually text) in a continuous vector space. They capture semantic meaning so that similar items are close together in the vector space. Word embeddings like Word2Vec and GloVe represent individual words, while sentence embeddings represent entire sentences or paragraphs. Embeddings are fundamental to modern NLP tasks including search, classification, and clustering. They are typically learned during training and can range from 100 to 4096 dimensions.
+
+Q: What is retrieval augmented generation (RAG)?
+A: RAG combines a retrieval system with a language model to generate more accurate and grounded responses. Instead of relying solely on what the model learned during training, RAG retrieves relevant documents from an external knowledge base and includes them as context when generating a response. This reduces hallucinations and allows the model to access up-to-date information. A typical RAG pipeline includes document chunking, embedding, vector storage, retrieval, and generation.
+
+Q: What is fine-tuning?
+A: Fine-tuning is the process of taking a pre-trained model and further training it on a specific dataset or task. Instead of training from scratch, you start with a model that already understands general patterns and adapt it to your domain. This requires much less data and compute than training from scratch. Common fine-tuning approaches include full fine-tuning (updating all parameters), LoRA (Low-Rank Adaptation, updating small adapter matrices), and prompt tuning (learning soft prompt embeddings).
+
+Q: What is the difference between precision and recall?
+A: Precision measures the proportion of positive predictions that are actually correct: TP / (TP + FP). Recall measures the proportion of actual positives that are correctly identified: TP / (TP + FN). There is often a trade-off between the two. The F1 score is the harmonic mean of precision and recall. In information retrieval, precision measures how many retrieved documents are relevant, while recall measures how many relevant documents are retrieved.
+
+Q: What is transfer learning?
+A: Transfer learning is a technique where a model trained on one task is reused as the starting point for a different but related task. For example, a model trained on ImageNet (image classification) can be adapted for medical image analysis. The idea is that features learned on the original task (like edge detection in images or grammar in text) are useful for the new task. This dramatically reduces the amount of task-specific data and training time needed.
+
+Q: What are hyperparameters?
+A: Hyperparameters are configuration values set before training that control the learning process, as opposed to model parameters which are learned during training. Examples include learning rate, batch size, number of epochs, number of hidden layers, dropout rate, and regularization strength. Hyperparameter tuning (finding the best values) can be done through grid search, random search, or Bayesian optimization.
+
+Q: What is a vector database?
+A: A vector database is a specialized database designed to store, index, and query high-dimensional vectors efficiently. Unlike traditional databases that search by exact match or range queries, vector databases use similarity metrics like cosine similarity or Euclidean distance to find the most similar vectors. They are essential for applications like semantic search, recommendation systems, and RAG pipelines. Popular vector databases include ChromaDB, FAISS, Pinecone, Weaviate, Qdrant, and Milvus.
+
+Q: What is the attention mechanism?
+A: The attention mechanism allows a model to focus on different parts of the input when producing each part of the output. In self-attention, each position in a sequence attends to all other positions to compute a representation. It works by computing Query, Key, and Value vectors for each position, then using dot products between Queries and Keys to determine attention weights, which are applied to Values. Multi-head attention runs multiple attention operations in parallel, allowing the model to attend to information from different representation subspaces.
+
+Q: What is gradient descent?
+A: Gradient descent is an optimization algorithm used to minimize the loss function during training. It works by computing the gradient (direction of steepest increase) of the loss with respect to each parameter, then updating parameters in the opposite direction. Variants include batch gradient descent (uses all data), stochastic gradient descent or SGD (uses one sample), and mini-batch gradient descent (uses a subset). Adam optimizer combines momentum and adaptive learning rates and is widely used in deep learning.

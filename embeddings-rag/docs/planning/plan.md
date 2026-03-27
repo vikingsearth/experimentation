@@ -77,6 +77,10 @@ Current files in `data/` remain useful for:
 
 A new small synthetic corpus should be added specifically for GraphRAG and multi-hop evaluation.
 
+Status:
+- Added under `data/relational/` as a synthetic TechVista operations knowledge base.
+- Includes labeled multi-hop questions in `data/relational/questions.json`.
+
 Desired traits:
 - Clear entities such as teams, services, owners, incidents, dependencies, and policies.
 - Cross-document relationships that force multi-step reasoning.

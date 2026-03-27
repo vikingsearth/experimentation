@@ -93,6 +93,7 @@ embeddings-rag/
   data/                  # Sample documents to index
     python_guide.txt     # Python programming guide (~7.5K chars)
     faq.txt              # ML FAQ document (~7K chars)
+    relational/          # Synthetic relational corpus for future GraphRAG work
   src/
     _ssl_workaround.py   # SSL fix for corporate proxies (delete if not needed)
     chunkers.py          # Four chunking strategy implementations
@@ -129,6 +130,12 @@ The planning details for that expansion live in [docs/planning/plan.md](docs/pla
 4. **Dense retrieval** -- the document-to-vector-to-nearest-neighbor flow used in many RAG systems
 
 Planned additions expand beyond this into hybrid retrieval, graph-based retrieval, and small-corpus no-retrieval baselines.
+
+## Relational Dataset
+
+The repository now includes a separate relational corpus in [data/relational/README.md](data/relational/README.md). It is a small synthetic company operations knowledge base with labeled multi-hop questions in `questions.json`.
+
+It is intentionally kept outside the current top-level tutorial corpus so the existing dense, lexical, and hybrid chunking benchmark remains stable while future GraphRAG work gets a dataset that actually rewards relationship-aware retrieval.
 
 ## Research Notes
 

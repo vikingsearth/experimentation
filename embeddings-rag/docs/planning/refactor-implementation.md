@@ -139,6 +139,11 @@ Weak for:
 
 The refactor should add a second dataset that is explicitly relational.
 
+Status:
+- Added under `data/relational/`.
+- Current theme: a synthetic company operations knowledge base for ownership, dependency, policy, and incident reasoning.
+- Includes a labeled question set in `data/relational/questions.json`.
+
 Recommended theme:
 - Small synthetic company operations knowledge base.
 

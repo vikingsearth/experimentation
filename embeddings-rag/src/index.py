@@ -16,9 +16,12 @@ import os
 import sys
 import time
 
-# Add project root to path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 sys.path.insert(0, PROJECT_ROOT)
+
+from src.config import CHROMA_DIR, CHUNK_SIZE, DATA_DIR, EMBEDDING_MODEL
+from src.corpus import load_documents
 
 # SSL workaround for corporate environments (remove if not needed)
 import src._ssl_workaround  # noqa: F401, E402
@@ -27,26 +30,6 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 
 from src.chunkers import chunk_all, Chunk
-
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
-DATA_DIR = os.path.join(PROJECT_ROOT, "data")
-CHROMA_DIR = os.path.join(PROJECT_ROOT, "chroma_db")
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-CHUNK_SIZE = 500
-
-
-def load_documents(data_dir: str) -> dict[str, str]:
-    """Load all .txt files from the data directory."""
-    docs = {}
-    for filename in sorted(os.listdir(data_dir)):
-        if filename.endswith(".txt"):
-            filepath = os.path.join(data_dir, filename)
-            with open(filepath, "r", encoding="utf-8") as f:
-                docs[filename] = f.read()
-    return docs
 
 
 def index_chunks(

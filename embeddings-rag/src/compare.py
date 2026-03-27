@@ -1,28 +1,31 @@
-"""
-Compare chunking strategies by running predefined test questions.
+"""Compare chunking strategies across different retrieval modes."""
 
-Usage:
-    python src/compare.py
-
-Runs a set of test questions against all four chunking strategies and
-produces a comparison table showing which strategies retrieve the most
-relevant chunks for each question.
-"""
-
+import argparse
 import os
 import sys
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 sys.path.insert(0, PROJECT_ROOT)
+
+from src.config import (
+    CHROMA_DIR,
+    EMBEDDING_MODEL,
+    RETRIEVAL_MODES,
+    STRATEGIES,
+)
+from src.corpus import build_chunk_catalog, load_documents
+from src.retrieval import (
+    build_lexical_retrievers,
+    query_dense_strategy,
+    query_hybrid_strategy,
+    query_lexical_strategy,
+)
 
 import src._ssl_workaround  # noqa: F401, E402
 
 import chromadb
 from sentence_transformers import SentenceTransformer
-
-CHROMA_DIR = os.path.join(PROJECT_ROOT, "chroma_db")
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-STRATEGIES = ["fixed", "recursive", "sentence", "semantic"]
 
 # Test questions with keywords that should appear in relevant chunks
 TEST_QUESTIONS = [
@@ -71,43 +74,42 @@ def score_relevance(text: str, keywords: list[str]) -> float:
     return found / len(keywords) if keywords else 0.0
 
 
-def query_and_score(
-    client: chromadb.ClientAPI,
-    strategy: str,
-    question_embedding: list[float],
-    keywords: list[str],
-    top_k: int = 3,
-) -> dict:
-    """Query a strategy and compute relevance scores."""
-    collection_name = f"strategy_{strategy}"
-    try:
-        collection = client.get_collection(name=collection_name)
-    except Exception:
-        return {"avg_similarity": 0, "keyword_score": 0, "top_text": ""}
-
-    results = collection.query(
-        query_embeddings=[question_embedding], n_results=top_k
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--retrieval",
+        choices=RETRIEVAL_MODES,
+        default="dense",
+        help="Retrieval mode to benchmark",
     )
+    parser.add_argument(
+        "--top-k",
+        type=int,
+        default=3,
+        help="Number of results to score for each strategy",
+    )
+    return parser.parse_args()
 
-    if not results["ids"][0]:
-        return {"avg_similarity": 0, "keyword_score": 0, "top_text": ""}
 
-    # Similarity scores (1 - distance for cosine)
-    similarities = [1 - d for d in results["distances"][0]]
-    avg_similarity = sum(similarities) / len(similarities)
+def query_and_score(results: list, keywords: list[str]) -> dict:
+    """Compute evaluation metrics from retrieved results."""
+    if not results:
+        return {"avg_score": 0, "keyword_score": 0, "top_text": ""}
 
-    # Keyword relevance (how many expected keywords appear in retrieved chunks)
-    all_text = " ".join(results["documents"][0])
+    avg_score = sum(result.score for result in results) / len(results)
+    all_text = " ".join(result.text for result in results)
     keyword_score = score_relevance(all_text, keywords)
 
     return {
-        "avg_similarity": avg_similarity,
+        "avg_score": avg_score,
         "keyword_score": keyword_score,
-        "top_text": results["documents"][0][0][:100],
+        "top_text": results[0].text[:100],
     }
 
 
 def main():
+    args = parse_args()
+
     if not os.path.exists(CHROMA_DIR):
         print("Error: ChromaDB not found. Run 'python src/index.py' first.")
         sys.exit(1)
@@ -115,41 +117,71 @@ def main():
     print(f"Loading embedding model: {EMBEDDING_MODEL}...")
     model = SentenceTransformer(EMBEDDING_MODEL)
     client = chromadb.PersistentClient(path=CHROMA_DIR)
+    lexical_retrievers = None
+
+    if args.retrieval in {"lexical", "hybrid"}:
+        print("Building lexical chunk catalog for BM25 retrieval...")
+        documents = load_documents()
+        catalog = build_chunk_catalog(documents, embedding_model=model)
+        lexical_retrievers = build_lexical_retrievers(catalog)
 
     print("=" * 80)
-    print("  Chunking Strategy Comparison")
+    print(f"  Chunking Strategy Comparison ({args.retrieval.upper()} retrieval)")
     print("=" * 80)
 
     # Collect scores
-    all_scores = {s: {"similarity": [], "keyword": []} for s in STRATEGIES}
+    all_scores = {s: {"score": [], "keyword": []} for s in STRATEGIES}
 
     for tq in TEST_QUESTIONS:
         question = tq["question"]
         keywords = tq["keywords"]
 
-        # Embed question once
-        question_embedding = model.encode(
-            [question], show_progress_bar=False
-        )[0].tolist()
+        question_embedding = None
+        if args.retrieval in {"dense", "hybrid"}:
+            question_embedding = model.encode(
+                [question], show_progress_bar=False
+            )[0].tolist()
 
         print(f"\n  Q: {question}")
         print(f"  {'-' * 72}")
         print(
-            f"  {'Strategy':<12s} {'Avg Similarity':>16s} {'Keyword Score':>15s}  "
+            f"  {'Strategy':<12s} {'Avg Score':>16s} {'Keyword Score':>15s}  "
             f"{'Top Chunk Preview'}"
         )
         print(f"  {'-' * 72}")
 
         for strategy in STRATEGIES:
-            result = query_and_score(
-                client, strategy, question_embedding, keywords
-            )
-            all_scores[strategy]["similarity"].append(result["avg_similarity"])
+            if args.retrieval == "dense":
+                results = query_dense_strategy(
+                    client,
+                    strategy,
+                    question_embedding,
+                    top_k=args.top_k,
+                )
+            elif args.retrieval == "lexical":
+                results = query_lexical_strategy(
+                    lexical_retrievers,
+                    strategy,
+                    question,
+                    top_k=args.top_k,
+                )
+            else:
+                results = query_hybrid_strategy(
+                    client,
+                    lexical_retrievers,
+                    strategy,
+                    question,
+                    question_embedding,
+                    top_k=args.top_k,
+                )
+
+            result = query_and_score(results, keywords)
+            all_scores[strategy]["score"].append(result["avg_score"])
             all_scores[strategy]["keyword"].append(result["keyword_score"])
 
             preview = result["top_text"].replace("\n", " ")[:40]
             print(
-                f"  {strategy:<12s} {result['avg_similarity']:>16.4f} "
+                f"  {strategy:<12s} {result['avg_score']:>16.4f} "
                 f"{result['keyword_score']:>15.1%}  "
                 f"{preview}..."
             )
@@ -159,7 +191,7 @@ def main():
     print("  Overall Results (averaged across all questions)")
     print(f"{'=' * 80}")
     print(
-        f"\n  {'Strategy':<12s} {'Avg Similarity':>16s} {'Avg Keyword Score':>19s} "
+        f"\n  {'Strategy':<12s} {'Avg Score':>16s} {'Avg Keyword Score':>19s} "
         f"{'Combined Score':>16s}"
     )
     print(f"  {'-' * 65}")
@@ -168,7 +200,7 @@ def main():
     best_combined = -1
 
     for strategy in STRATEGIES:
-        sims = all_scores[strategy]["similarity"]
+        sims = all_scores[strategy]["score"]
         keys = all_scores[strategy]["keyword"]
         avg_sim = sum(sims) / len(sims) if sims else 0
         avg_key = sum(keys) / len(keys) if keys else 0
@@ -188,15 +220,11 @@ def main():
 
     # Observations
     print("  Observations:")
-    print("  - Fixed-size chunking may split mid-sentence, losing context")
-    print("  - Recursive chunking preserves paragraph boundaries when possible")
-    print("  - Sentence-based chunking never splits a sentence")
-    print(
-        "  - Semantic chunking groups related content but is more expensive to index"
-    )
-    print(
-        "  - The 'best' strategy depends on your document type and query patterns"
-    )
+    print("  - Dense retrieval rewards semantic similarity across paraphrases")
+    print("  - Lexical retrieval rewards exact keyword overlap and rare terms")
+    print("  - Hybrid retrieval can recover chunks missed by either signal alone")
+    print("  - Recursive and sentence chunking usually preserve context more cleanly")
+    print("  - The best strategy still depends on your documents and question style")
     print()
 
 

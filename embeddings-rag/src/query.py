@@ -1,84 +1,84 @@
-"""
-Query the indexed documents across all chunking strategies.
+"""Query the indexed documents across all chunking strategies."""
 
-Usage:
-    python src/query.py "What is a list comprehension?"
-    python src/query.py  # (interactive mode)
-
-Shows side-by-side results from each strategy with similarity scores.
-"""
-
+import argparse
 import os
 import sys
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 sys.path.insert(0, PROJECT_ROOT)
+
+from src.config import (
+    CHROMA_DIR,
+    EMBEDDING_MODEL,
+    RETRIEVAL_MODES,
+    STRATEGIES,
+    TOP_K,
+)
+from src.corpus import build_chunk_catalog, load_documents
+from src.retrieval import (
+    build_lexical_retrievers,
+    query_dense_strategy,
+    query_hybrid_strategy,
+    query_lexical_strategy,
+)
 
 import src._ssl_workaround  # noqa: F401, E402
 
 import chromadb
 from sentence_transformers import SentenceTransformer
 
-CHROMA_DIR = os.path.join(PROJECT_ROOT, "chroma_db")
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-STRATEGIES = ["fixed", "recursive", "sentence", "semantic"]
-TOP_K = 3
 
-
-def query_strategy(
-    client: chromadb.ClientAPI,
-    strategy: str,
-    question_embedding: list[float],
-    top_k: int = TOP_K,
-) -> list[dict]:
-    """Query a single strategy's collection and return results."""
-    collection_name = f"strategy_{strategy}"
-    try:
-        collection = client.get_collection(name=collection_name)
-    except Exception:
-        return []
-
-    results = collection.query(
-        query_embeddings=[question_embedding], n_results=top_k
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("question", nargs="*", help="Question to ask")
+    parser.add_argument(
+        "--retrieval",
+        choices=RETRIEVAL_MODES,
+        default="dense",
+        help="Retrieval mode to use across strategies",
     )
-
-    formatted = []
-    for i in range(len(results["ids"][0])):
-        formatted.append(
-            {
-                "id": results["ids"][0][i],
-                "text": results["documents"][0][i],
-                "distance": results["distances"][0][i],
-                "metadata": results["metadatas"][0][i],
-            }
-        )
-    return formatted
+    parser.add_argument(
+        "--top-k",
+        type=int,
+        default=TOP_K,
+        help="Number of results to show per strategy",
+    )
+    return parser.parse_args()
 
 
-def print_results(strategy: str, results: list[dict]) -> None:
+def print_results(strategy: str, results: list, retrieval_mode: str) -> None:
     """Pretty-print results for a strategy."""
     print(f"\n  Strategy: {strategy.upper()}")
     print(f"  {'-' * 60}")
 
     if not results:
-        print("  (no results -- collection may not exist. Run index.py first.)")
+        print("  (no results for this strategy.)")
         return
 
-    for i, r in enumerate(results):
-        # ChromaDB returns distances; lower = more similar for cosine
-        similarity = 1 - r["distance"]  # Convert distance to similarity
-        source = r["metadata"].get("source", "unknown")
-        chars = r["metadata"].get("char_length", len(r["text"]))
-        preview = r["text"][:200].replace("\n", " ")
+    for i, result in enumerate(results):
+        source = result.metadata.get("source", "unknown")
+        chars = result.metadata.get("char_length", len(result.text))
+        preview = result.text[:200].replace("\n", " ")
 
-        print(
-            f"  [{i + 1}] similarity={similarity:.4f} | source={source} | {chars} chars"
-        )
+        if retrieval_mode == "hybrid":
+            print(
+                f"  [{i + 1}] score={result.score:.4f} "
+                f"| dense={result.score_breakdown.get('dense', 0.0):.4f} "
+                f"| lexical={result.score_breakdown.get('lexical', 0.0):.4f} "
+                f"| source={source} | {chars} chars"
+            )
+        else:
+            print(
+                f"  [{i + 1}] score={result.score:.4f} | source={source} | {chars} chars"
+            )
         print(f"      {preview}...")
         print()
 
 
 def main():
+    args = parse_args()
+
     # Check if ChromaDB exists
     if not os.path.exists(CHROMA_DIR):
         print("Error: ChromaDB not found. Run 'python src/index.py' first.")
@@ -87,10 +87,17 @@ def main():
     print(f"Loading embedding model: {EMBEDDING_MODEL}...")
     model = SentenceTransformer(EMBEDDING_MODEL)
     client = chromadb.PersistentClient(path=CHROMA_DIR)
+    lexical_retrievers = None
+
+    if args.retrieval in {"lexical", "hybrid"}:
+        print("Building lexical chunk catalog for BM25 retrieval...")
+        documents = load_documents()
+        catalog = build_chunk_catalog(documents, embedding_model=model)
+        lexical_retrievers = build_lexical_retrievers(catalog)
 
     # Get question from args or interactive mode
-    if len(sys.argv) > 1:
-        questions = [" ".join(sys.argv[1:])]
+    if args.question:
+        questions = [" ".join(args.question)]
     else:
         print("Interactive query mode. Type 'quit' to exit.\n")
         questions = []
@@ -104,16 +111,41 @@ def main():
     for question in questions:
         print(f"\n{'=' * 70}")
         print(f"  QUERY: {question}")
+        print(f"  Retrieval mode: {args.retrieval}")
         print(f"{'=' * 70}")
 
         # Embed the question once, reuse across strategies
-        question_embedding = model.encode([question], show_progress_bar=False)[
-            0
-        ].tolist()
+        question_embedding = None
+        if args.retrieval in {"dense", "hybrid"}:
+            question_embedding = model.encode([question], show_progress_bar=False)[
+                0
+            ].tolist()
 
         for strategy in STRATEGIES:
-            results = query_strategy(client, strategy, question_embedding)
-            print_results(strategy, results)
+            if args.retrieval == "dense":
+                results = query_dense_strategy(
+                    client,
+                    strategy,
+                    question_embedding,
+                    top_k=args.top_k,
+                )
+            elif args.retrieval == "lexical":
+                results = query_lexical_strategy(
+                    lexical_retrievers,
+                    strategy,
+                    question,
+                    top_k=args.top_k,
+                )
+            else:
+                results = query_hybrid_strategy(
+                    client,
+                    lexical_retrievers,
+                    strategy,
+                    question,
+                    question_embedding,
+                    top_k=args.top_k,
+                )
+            print_results(strategy, results, args.retrieval)
 
         print()
 

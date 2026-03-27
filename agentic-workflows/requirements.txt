@@ -1,0 +1,10 @@
+# Expense Approval Agentic Workflow Demo
+#
+# This project uses only Python standard library -- no external dependencies.
+# Python 3.9+ required (for dict[] type hints and dataclasses features).
+#
+# If you want to extend this with real LLM-powered agents, consider:
+#   langgraph>=0.2.0      # Graph-based workflow orchestration
+#   langchain>=0.3.0      # LLM abstractions and tool integration
+#   anthropic>=0.40.0     # Claude API client
+#   openai>=1.50.0        # OpenAI API client

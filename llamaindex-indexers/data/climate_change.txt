@@ -1,0 +1,32 @@
+Climate Change: Causes, Effects, and Solutions
+
+Climate change refers to long-term shifts in global temperatures and weather patterns. While climate shifts can be natural, since the 1800s, human activities have been the main driver, primarily due to the burning of fossil fuels like coal, oil, and natural gas.
+
+Causes of Climate Change
+The primary cause is the greenhouse effect amplified by human activities. Key greenhouse gases include:
+- Carbon dioxide (CO2): Released by burning fossil fuels, deforestation, and industrial processes. CO2 levels have increased from 280 ppm (pre-industrial) to over 420 ppm today.
+- Methane (CH4): Released by livestock, rice paddies, landfills, and natural gas extraction. Methane is 80 times more potent than CO2 over a 20-year period.
+- Nitrous oxide (N2O): From agricultural fertilizers and industrial processes
+- Fluorinated gases: From industrial processes, refrigeration, and air conditioning
+
+Effects of Climate Change
+The consequences are wide-ranging and interconnected:
+- Rising global temperatures: Average temperature has increased by approximately 1.1 degrees Celsius since the pre-industrial era
+- Sea level rise: Thermal expansion and melting ice sheets have caused seas to rise about 20 cm since 1900, with acceleration in recent decades
+- Extreme weather events: More frequent and intense hurricanes, droughts, floods, and heatwaves
+- Ocean acidification: Oceans absorb about 30% of CO2, lowering pH and threatening marine ecosystems
+- Biodiversity loss: Species extinction rates are 1,000 times higher than natural background rates
+- Food security: Changing precipitation patterns and extreme heat affect crop yields
+- Human health: Heat-related illnesses, spread of tropical diseases, and air quality degradation
+
+Solutions and Mitigation
+Addressing climate change requires both mitigation (reducing emissions) and adaptation:
+- Renewable energy: Solar, wind, hydroelectric, and geothermal power
+- Energy efficiency: Better insulation, LED lighting, efficient appliances
+- Electric vehicles: Replacing internal combustion engines
+- Carbon capture: Technologies to remove CO2 from the atmosphere
+- Reforestation: Planting trees to absorb CO2
+- Policy measures: Carbon pricing, emissions trading, international agreements like the Paris Agreement
+- Individual actions: Reducing consumption, sustainable transportation, dietary changes
+
+The Paris Agreement aims to limit global warming to 1.5 degrees Celsius above pre-industrial levels. Achieving this goal requires reaching net-zero emissions by 2050, which demands unprecedented transformation of energy systems, transportation, agriculture, and industry worldwide.

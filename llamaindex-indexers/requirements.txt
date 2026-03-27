@@ -1,0 +1,7 @@
+llama-index-core==0.12.23
+llama-index-llms-openai==0.3.42
+llama-index-embeddings-huggingface==0.5.2
+llama-index-readers-file==0.4.7
+transformers>=4.30.0
+torch>=2.0.0
+python-dotenv>=1.0.0

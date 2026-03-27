@@ -1,0 +1,12 @@
+{
+  "name": "markdown-localhost",
+  "version": "1.0.0",
+  "description": "Experiment: Serve markdown as beautiful localhost pages using Docsify",
+  "scripts": {
+    "start": "docsify serve content --port 3000 --open",
+    "serve": "docsify serve content --port 3000"
+  },
+  "devDependencies": {
+    "docsify-cli": "^4.4.4"
+  }
+}

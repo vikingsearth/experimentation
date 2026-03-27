@@ -10,7 +10,6 @@ This is the "aha moment" script that ties the whole experiment together.
 """
 
 import os
-import sys
 import time
 from pathlib import Path
 
@@ -24,6 +23,12 @@ try:
 except ImportError:
     pass
 
+from local_llm import build_local_llm
+
+
+TREE_NUM_CHILDREN = int(os.getenv("TREE_NUM_CHILDREN", "3"))
+TREE_CHILD_BRANCH_FACTOR = int(os.getenv("TREE_CHILD_BRANCH_FACTOR", "3"))
+
 
 def build_all_indices(documents):
     """Build all four index types from the same documents."""
@@ -31,16 +36,17 @@ def build_all_indices(documents):
         VectorStoreIndex,
         SummaryIndex,
         TreeIndex,
-        KeywordTableIndex,
+        SimpleKeywordTableIndex,
         Settings,
     )
-    from llama_index.core.llms import MockLLM
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
     Settings.embed_model = HuggingFaceEmbedding(
         model_name="BAAI/bge-small-en-v1.5"
     )
-    Settings.llm = MockLLM()
+    print("  Loading local GGUF LLM...", end=" ", flush=True)
+    Settings.llm = build_local_llm(PROJECT_ROOT)
+    print("done")
     Settings.chunk_size = 256
     Settings.chunk_overlap = 30
 
@@ -58,16 +64,20 @@ def build_all_indices(documents):
     indices["Summary"] = SummaryIndex.from_documents(documents)
     print(f"({time.time() - start:.2f}s)")
 
-    # TreeIndex (lazy)
-    print("  Building TreeIndex (lazy)...", end=" ", flush=True)
+    # TreeIndex (eager hierarchy)
+    print("  Building TreeIndex (eager)...", end=" ", flush=True)
     start = time.time()
-    indices["Tree"] = TreeIndex.from_documents(documents, build_tree=False)
+    indices["Tree"] = TreeIndex.from_documents(
+        documents,
+        build_tree=True,
+        num_children=TREE_NUM_CHILDREN,
+    )
     print(f"({time.time() - start:.2f}s)")
 
-    # KeywordTableIndex
-    print("  Building KeywordTableIndex...", end=" ", flush=True)
+    # KeywordTableIndex (simple/regex-based)
+    print("  Building KeywordTableIndex (simple)...", end=" ", flush=True)
     start = time.time()
-    indices["KeywordTable"] = KeywordTableIndex.from_documents(documents)
+    indices["KeywordTable"] = SimpleKeywordTableIndex.from_documents(documents)
     print(f"({time.time() - start:.2f}s)")
 
     return indices
@@ -86,10 +96,17 @@ def query_all_indices(indices, query, top_k=3):
                     retriever_mode="embedding", similarity_top_k=top_k
                 )
             elif name == "Tree":
-                # Use all_leaf mode (select_leaf needs LLM)
-                retriever = index.as_retriever(retriever_mode="all_leaf")
+                if "summarize" in query.lower() or "topics covered" in query.lower():
+                    retriever = index.as_retriever(retriever_mode="root")
+                else:
+                    retriever = index.as_retriever(
+                        retriever_mode="select_leaf_embedding",
+                        child_branch_factor=TREE_CHILD_BRANCH_FACTOR,
+                    )
             elif name == "VectorStore":
                 retriever = index.as_retriever(similarity_top_k=top_k)
+            elif name == "KeywordTable":
+                retriever = index.as_retriever(retriever_mode="simple")
             else:
                 retriever = index.as_retriever()
 
@@ -222,7 +239,7 @@ def main():
     {'-'*20} {'-'*15} {'-'*15} {'-'*30}
     {'VectorStore':<20} {'Medium':<15} {'Low':<15} {'Semantic Q&A, factual queries'}
     {'Summary':<20} {'None':<15} {'High':<15} {'Summarization, small corpora'}
-    {'Tree':<20} {'High':<15} {'Medium':<15} {'Hierarchical overview queries'}
+    {'Tree':<20} {'High':<15} {'Medium':<15} {'Hierarchical retrieval and summaries'}
     {'KeywordTable':<20} {'Low':<15} {'Low':<15} {'Keyword routing, exact terms'}
     """)
 

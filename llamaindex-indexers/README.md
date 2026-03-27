@@ -55,10 +55,26 @@ pip install pip-system-certs
 
 No OpenAI API key is needed -- the experiment uses:
 - **HuggingFace BGE-small** for embeddings (free, runs locally)
-- **MockLLM** for scripts that require an LLM (TreeIndex, KeywordTableIndex)
+- **Local llama.cpp GGUF model** for scripts that require an LLM
 
-To use a real LLM, set `OPENAI_API_KEY` in a `.env` file and replace `MockLLM()` with
-`OpenAI(model="gpt-4o-mini")` in the scripts.
+The LLM-backed scripts now use:
+- Repo: `tensorblock/llama3.2-1b-Uncensored-GGUF`
+- File: `llama3.2-1b-Uncensored-Q8_0.gguf`
+- Revision: `231935b9839df1237fd65a1b106a6c16029174d4`
+
+That revision is pinned intentionally because the current `main` branch no longer ships
+the `Q8_0` file.
+
+On first run, the scripts download the GGUF into `models/` automatically. If you already
+have the file locally, set `LOCAL_LLM_MODEL_PATH` in `.env` and the scripts will use that
+path instead.
+
+Optional tuning variables:
+- `LOCAL_LLM_N_GPU_LAYERS=0` for CPU-only inference
+- `LOCAL_LLM_DIR=...` to change the download directory
+- `LOCAL_LLM_CONTEXT_WINDOW=4096` to tune context length
+- `TREE_NUM_CHILDREN=3` to control tree fanout
+- `TREE_CHILD_BRANCH_FACTOR=3` to control how many branches tree traversal explores
 
 ## Running
 
@@ -72,6 +88,12 @@ python src/04_tree_index.py           # ~3s  - hierarchical summaries
 python src/05_keyword_table_index.py  # ~3s  - keyword-based lookup
 python src/06_compare_all.py          # ~10s - the big comparison
 ```
+
+The first LLM-backed run will take longer because it downloads about 1.3 GB of GGUF
+weights before starting.
+
+The repo also supports a checked-in `.env` file for local defaults. This is especially
+useful for the pinned GGUF revision, tree fanout, and CPU/GPU settings.
 
 **Start with `06_compare_all.py`** if you just want the key takeaway.
 

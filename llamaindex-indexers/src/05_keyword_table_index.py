@@ -11,7 +11,6 @@ Key characteristics:
 """
 
 import os
-import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -24,21 +23,25 @@ try:
 except ImportError:
     pass
 
+from local_llm import build_local_llm
+
 
 def main():
     print("=" * 70)
     print("STEP 5: KEYWORD TABLE INDEX")
     print("=" * 70)
 
-    from llama_index.core import SimpleDirectoryReader, Settings, KeywordTableIndex
-    from llama_index.core.llms import MockLLM
+    from llama_index.core import (
+        SimpleDirectoryReader,
+        Settings,
+        SimpleKeywordTableIndex,
+    )
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
     Settings.embed_model = HuggingFaceEmbedding(
         model_name="BAAI/bge-small-en-v1.5"
     )
-    # KeywordTableIndex needs an LLM registered. Use MockLLM for offline demo.
-    Settings.llm = MockLLM()
+    Settings.llm = build_local_llm(PROJECT_ROOT)
     Settings.chunk_size = 256
     Settings.chunk_overlap = 30
 
@@ -52,11 +55,11 @@ def main():
     # ------------------------------------------------------------------
     # Build KeywordTableIndex (Simple variant -- regex-based, no LLM)
     # ------------------------------------------------------------------
-    print("\nBuilding KeywordTableIndex (Simple/regex-based)...")
+    print("\nBuilding SimpleKeywordTableIndex (regex-based)...")
     import time
 
     start = time.time()
-    index = KeywordTableIndex.from_documents(documents)
+    index = SimpleKeywordTableIndex.from_documents(documents)
     build_time = time.time() - start
     print(f"Index built in {build_time:.2f}s")
 
@@ -97,7 +100,7 @@ def main():
     print("QUERYING KEYWORD TABLE INDEX")
     print("-" * 70)
 
-    retriever = index.as_retriever(retriever_mode="default")
+    retriever = index.as_retriever(retriever_mode="simple")
 
     queries = [
         "What is Python used for?",

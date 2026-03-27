@@ -1,12 +1,12 @@
 # Embeddings, Chunking Strategies, and Augmented Generation
 
-A hands-on experiment focused on how AI systems ground answers in external knowledge. The current implementation demonstrates chunking strategies, embeddings, a local vector database, and dense retrieval. The planning docs now define a broader refactor toward a benchmark suite covering multiple retrieval and augmentation approaches.
+A hands-on experiment focused on how AI systems ground answers in external knowledge. The current implementation demonstrates chunking strategies, embeddings, a local vector database, dense retrieval, and local lexical or hybrid retrieval over the same chunk sets. The planning docs define the next refactor steps toward a broader benchmark suite covering multiple retrieval and augmentation approaches.
 
 ## What This Does Today
 
-Today the project takes two sample documents, splits them using four different chunking strategies, embeds the chunks into vectors, stores them in a local vector database (ChromaDB), and lets you query across all strategies to compare retrieval quality.
+Today the project takes two sample documents, splits them using four different chunking strategies, embeds the chunks into vectors, stores them in a local vector database (ChromaDB), and lets you query across all strategies using dense, lexical, or hybrid retrieval to compare retrieval quality.
 
-In other words, the current codebase is a chunking plus dense retrieval experiment inside a single local RAG-style pipeline. It is useful, but intentionally narrower than a full comparison of augmentation strategies.
+In other words, the current codebase is now a chunking plus local retrieval experiment with multiple retrieval signals, but it is still narrower than a full comparison of augmentation strategies.
 
 ### Chunking Strategies Compared
 
@@ -52,17 +52,20 @@ Loads sample docs from `data/`, chunks them with all four strategies, embeds the
 
 ```bash
 python src/query.py "What is a list comprehension?"
+python src/query.py --retrieval lexical "What is a list comprehension?"
+python src/query.py --retrieval hybrid "What is a list comprehension?"
 ```
 
-Shows the top-3 most similar chunks from each strategy with similarity scores. Run without arguments for interactive mode.
+Shows the top results from each strategy. Dense mode uses Chroma similarity search, lexical mode uses local BM25-style scoring, and hybrid mode fuses both signals. Run without arguments for interactive mode.
 
 ### 3. Compare strategies
 
 ```bash
 python src/compare.py
+python src/compare.py --retrieval hybrid
 ```
 
-Runs 8 predefined test questions against all strategies. Produces a comparison table with similarity scores and keyword relevance.
+Runs 8 predefined test questions against all strategies. Produces a comparison table with retrieval scores and keyword relevance for the selected retrieval mode.
 
 ## What to Expect
 
@@ -106,7 +109,8 @@ embeddings-rag/
 Current scope:
 - Compare four chunking strategies over one embedding model.
 - Use a single local vector database backend: ChromaDB.
-- Measure retrieval quality using similarity and keyword heuristics.
+- Compare dense, lexical, and hybrid retrieval over the same chunk sets.
+- Measure retrieval quality using retrieval-score and keyword heuristics.
 
 Planned refactor scope:
 - Compare multiple vector storage backends, not just ChromaDB.

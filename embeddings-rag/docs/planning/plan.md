@@ -17,7 +17,7 @@ The existing implementation covers one narrow but useful slice of the space:
 - Four chunking strategies.
 - One embedding model.
 - One vector database backend: ChromaDB.
-- Dense similarity search only.
+- Dense, lexical, and hybrid retrieval over the same local corpus.
 - Retrieval scoring only, not answer-generation benchmarking.
 
 That remains a valid baseline, but it is no longer the full intended scope of the project.

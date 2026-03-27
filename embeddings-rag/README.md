@@ -1,10 +1,12 @@
-# Embeddings, Chunking Strategies, and RAG
+# Embeddings, Chunking Strategies, and Augmented Generation
 
-A hands-on experiment demonstrating how document indexing works for AI/LLM context: chunking strategies, vector embeddings, vector databases, and retrieval-augmented generation (RAG).
+A hands-on experiment focused on how AI systems ground answers in external knowledge. The current implementation demonstrates chunking strategies, embeddings, a local vector database, and dense retrieval. The planning docs now define a broader refactor toward a benchmark suite covering multiple retrieval and augmentation approaches.
 
-## What This Does
+## What This Does Today
 
-Takes two sample documents, splits them using four different chunking strategies, embeds the chunks into vectors, stores them in a local vector database (ChromaDB), and lets you query across all strategies to compare retrieval quality.
+Today the project takes two sample documents, splits them using four different chunking strategies, embeds the chunks into vectors, stores them in a local vector database (ChromaDB), and lets you query across all strategies to compare retrieval quality.
+
+In other words, the current codebase is a chunking plus dense retrieval experiment inside a single local RAG-style pipeline. It is useful, but intentionally narrower than a full comparison of augmentation strategies.
 
 ### Chunking Strategies Compared
 
@@ -96,15 +98,33 @@ embeddings-rag/
     compare.py           # Automated strategy comparison
   docs/
     research/            # Research notes on the underlying concepts
-    planning/            # Experiment plan
+    planning/            # Experiment and refactor plans
 ```
+
+## Current Scope vs Planned Scope
+
+Current scope:
+- Compare four chunking strategies over one embedding model.
+- Use a single local vector database backend: ChromaDB.
+- Measure retrieval quality using similarity and keyword heuristics.
+
+Planned refactor scope:
+- Compare multiple vector storage backends, not just ChromaDB.
+- Add multiple retrieval baselines, not just dense vector search.
+- Add a small-corpus no-retrieval baseline aligned with CAG-style evaluation.
+- Add a GraphRAG baseline for relational or multi-hop questions.
+- Introduce dataset-specific evaluation so graph methods are tested on data that actually rewards graph traversal.
+
+The planning details for that expansion live in [docs/planning/plan.md](docs/planning/plan.md) and [docs/planning/refactor-implementation.md](docs/planning/refactor-implementation.md).
 
 ## Key Concepts Demonstrated
 
 1. **Chunking** -- how different splitting strategies affect what gets retrieved
 2. **Embeddings** -- converting text to vectors that capture semantic meaning
 3. **Vector database** -- storing and searching vectors by similarity
-4. **RAG pipeline** -- the full flow from document to retrieval result
+4. **Dense retrieval** -- the document-to-vector-to-nearest-neighbor flow used in many RAG systems
+
+Planned additions expand beyond this into hybrid retrieval, graph-based retrieval, and small-corpus no-retrieval baselines.
 
 ## Research Notes
 
@@ -114,9 +134,15 @@ See `docs/research/` for detailed notes on:
 - [RAG vs CAG](docs/research/rag-vs-cag.md)
 - [Embedding models](docs/research/embedding-models.md)
 
+See `docs/planning/` for the revised benchmark scope and implementation plan:
+- [Revised experiment plan](docs/planning/plan.md)
+- [Refactor implementation plan](docs/planning/refactor-implementation.md)
+
 ## Tech Stack
 
 - **sentence-transformers** (all-MiniLM-L6-v2) -- free, local embedding model
 - **ChromaDB** -- embedded vector database, zero infrastructure
 - **nltk** -- sentence tokenization
 - **numpy** -- vector operations
+
+The current stack is intentionally local-first. The refactor plan preserves that constraint wherever practical so additional baselines can still be run without managed cloud services or API keys.

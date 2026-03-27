@@ -1,0 +1,97 @@
+[
+  {
+    "id": "rel_q1",
+    "question": "Which team owns the service that CustomerPortal uses for checkout and that writes payment results to BillingLedger?",
+    "expected_answer": "The Payments team owns PaymentsAPI, which CustomerPortal uses for checkout and which persists results to BillingLedger.",
+    "expected_terms": ["Payments team", "PaymentsAPI", "CustomerPortal", "BillingLedger"],
+    "entities": ["CustomerPortal", "PaymentsAPI", "BillingLedger", "Payments team"],
+    "supporting_files": [
+      "02_services_and_repositories.txt",
+      "03_dependencies_and_flows.txt"
+    ]
+  },
+  {
+    "id": "rel_q2",
+    "question": "If AuthGateway logins fail because an expired signing key was distributed, which team should fix the root cause and which policy governs it?",
+    "expected_answer": "The Identity team should fix the root cause in KeyVaultSync and AuthGateway, and the governing policy is POL-024 Key Rotation Policy.",
+    "expected_terms": ["Identity team", "POL-024", "KeyVaultSync", "AuthGateway"],
+    "entities": ["Identity team", "POL-024", "KeyVaultSync", "AuthGateway", "CustomerPortal"],
+    "supporting_files": [
+      "01_people_and_teams.txt",
+      "03_dependencies_and_flows.txt",
+      "04_policies_and_controls.txt",
+      "05_incidents.txt",
+      "06_changes_and_runbooks.txt"
+    ]
+  },
+  {
+    "id": "rel_q3",
+    "question": "What downstream systems are involved after PaymentsAPI emits checkout.completed?",
+    "expected_answer": "PaymentsAPI sends checkout.completed to EventBridge, which feeds NotificationWorker and WarehouseSync. WarehouseSync then passes validated records through AnalyticsIngest into Customer360.",
+    "expected_terms": ["EventBridge", "NotificationWorker", "WarehouseSync", "AnalyticsIngest", "Customer360"],
+    "entities": ["PaymentsAPI", "EventBridge", "NotificationWorker", "WarehouseSync", "AnalyticsIngest", "Customer360"],
+    "supporting_files": [
+      "02_services_and_repositories.txt",
+      "03_dependencies_and_flows.txt"
+    ]
+  },
+  {
+    "id": "rel_q4",
+    "question": "Which policies were violated by the 2026-04-18 BillingLedger event change?",
+    "expected_answer": "POL-052 was violated because the schema change was not announced and the runbook was not updated. POL-031 was also violated because customer_email was added to an analytics-bound event.",
+    "expected_terms": ["POL-052", "POL-031", "customer_email", "BillingLedger", "AnalyticsIngest"],
+    "entities": ["POL-052", "POL-031", "BillingLedger", "AnalyticsIngest", "WarehouseSync", "Customer360"],
+    "supporting_files": [
+      "04_policies_and_controls.txt",
+      "05_incidents.txt",
+      "06_changes_and_runbooks.txt"
+    ]
+  },
+  {
+    "id": "rel_q5",
+    "question": "Why would SupportConsole degrade during an analytics backlog even though it is not on the checkout request path?",
+    "expected_answer": "SupportConsole depends on Customer360 for recent order timelines, and Customer360 is updated through WarehouseSync and AnalyticsIngest, so analytics lag reduces SupportConsole freshness.",
+    "expected_terms": ["SupportConsole", "Customer360", "WarehouseSync", "AnalyticsIngest"],
+    "entities": ["SupportConsole", "Customer360", "WarehouseSync", "AnalyticsIngest"],
+    "supporting_files": [
+      "02_services_and_repositories.txt",
+      "03_dependencies_and_flows.txt",
+      "05_incidents.txt",
+      "06_changes_and_runbooks.txt"
+    ]
+  },
+  {
+    "id": "rel_q6",
+    "question": "During a cross-team Sev-1 outage, which team usually provides the incident commander and who is their primary incident commander?",
+    "expected_answer": "Platform Operations usually provides the incident commander, and Lucas Meyer is the primary incident commander for that team.",
+    "expected_terms": ["Platform Operations", "Lucas Meyer", "POL-041"],
+    "entities": ["Platform Operations", "Lucas Meyer", "POL-041"],
+    "supporting_files": [
+      "01_people_and_teams.txt",
+      "04_policies_and_controls.txt",
+      "05_incidents.txt"
+    ]
+  },
+  {
+    "id": "rel_q7",
+    "question": "Which repositories should be inspected first if checkout failures are caused by fraud decision latency upstream of payment capture?",
+    "expected_answer": "Start with repo-risk-scoring and repo-feature-store because PaymentsAPI depends on RiskScoring, and RiskScoring depends on FeatureStore.",
+    "expected_terms": ["repo-risk-scoring", "repo-feature-store", "RiskScoring", "FeatureStore", "PaymentsAPI"],
+    "entities": ["repo-risk-scoring", "repo-feature-store", "RiskScoring", "FeatureStore", "PaymentsAPI"],
+    "supporting_files": [
+      "02_services_and_repositories.txt",
+      "03_dependencies_and_flows.txt",
+      "05_incidents.txt"
+    ]
+  },
+  {
+    "id": "rel_q8",
+    "question": "What is the normal end-to-end checkout path before customer notifications and analytics updates happen?",
+    "expected_answer": "The request path is CustomerPortal to PaymentsAPI to RiskScoring to FeatureStore, then back to PaymentsAPI to BillingLedger. After that, PaymentsAPI publishes checkout.completed to EventBridge, which feeds NotificationWorker and WarehouseSync.",
+    "expected_terms": ["CustomerPortal", "PaymentsAPI", "RiskScoring", "FeatureStore", "BillingLedger", "EventBridge", "NotificationWorker", "WarehouseSync"],
+    "entities": ["CustomerPortal", "PaymentsAPI", "RiskScoring", "FeatureStore", "BillingLedger", "EventBridge", "NotificationWorker", "WarehouseSync"],
+    "supporting_files": [
+      "03_dependencies_and_flows.txt"
+    ]
+  }
+]

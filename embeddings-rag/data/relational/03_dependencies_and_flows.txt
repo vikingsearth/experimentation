@@ -1,0 +1,17 @@
+TechVista Operations Knowledge Base: Dependencies and Flows
+
+CustomerPortal depends on AuthGateway for login, SessionService for session refresh, and PaymentsAPI for checkout.
+
+PaymentsAPI depends on BillingLedger to persist payment results. PaymentsAPI also depends on RiskScoring for fraud decisions before payment capture. When a payment is approved, PaymentsAPI publishes a checkout.completed event to EventBridge.
+
+RiskScoring depends on FeatureStore for model inputs and publishes fraud.review_required events to EventBridge when a transaction must be manually reviewed.
+
+NotificationWorker depends on EventBridge because it consumes checkout.completed and refund.completed events to notify customers.
+
+WarehouseSync depends on EventBridge and AnalyticsIngest. It consumes checkout.completed, refund.completed, and invoice.posted events before loading curated records into Customer360.
+
+AuthGateway depends on KeyVaultSync for OAuth signing key distribution. If KeyVaultSync delivers an expired key, CustomerPortal logins fail even when SessionService is healthy.
+
+BillingLedger publishes invoice.posted and refund.completed events to EventBridge after settlement jobs finish.
+
+During normal checkout, the request path is CustomerPortal to PaymentsAPI to RiskScoring to FeatureStore, then back to PaymentsAPI to BillingLedger. The post-payment event path is PaymentsAPI to EventBridge to NotificationWorker and WarehouseSync, then WarehouseSync to AnalyticsIngest to Customer360.

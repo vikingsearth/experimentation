@@ -1,0 +1,11 @@
+TechVista Operations Knowledge Base: Changes and Runbooks
+
+The PaymentsAPI release on 2026-03-07 was approved by Sarah Ndlovu and Ava Smith. It included a timeout increase for RiskScoring and a feature flag for split settlements. Because it was deployed on a Friday evening, the rollback plan was documented in RB-PAY-12.
+
+The BillingLedger release on 2026-04-18 changed the invoice.posted event by adding customer_email directly to the payload. Omar Daniels approved the data change, but the shared architecture channel announcement was missed and the EventBridge consumer runbook was not updated.
+
+The KeyVaultSync runbook states that AuthGateway must reject signing keys older than ninety days. On 2026-02-14, the scheduled rotation job was disabled during maintenance and never re-enabled.
+
+WarehouseSync runbook RB-PLAT-07 says analytics-bound events must be validated by AnalyticsIngest before landing in Customer360. If AnalyticsIngest rejects an event schema, WarehouseSync queues it and the analytics dashboard falls behind.
+
+SupportConsole depends on Customer360 for recent order timelines, so analytics lag also degrades agent visibility during customer support incidents.

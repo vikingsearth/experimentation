@@ -1,0 +1,10 @@
+TechVista Operations Knowledge Base: Incident Reports
+
+INC-2026-02-14 Login outage:
+CustomerPortal logins failed for 41 minutes because KeyVaultSync distributed an OAuth signing key that was older than 90 days. AuthGateway rejected the key, while SessionService remained healthy. Lucas Meyer served as incident commander and Daniel Ross was communications lead.
+
+INC-2026-03-07 Checkout latency:
+PaymentsAPI experienced elevated checkout latency when RiskScoring waited on stale features from FeatureStore after a Data Platform maintenance job. Ava Smith coordinated customer-facing updates while Sarah Ndlovu approved the mitigation rollout.
+
+INC-2026-04-18 Analytics backlog:
+BillingLedger published a changed invoice.posted payload that added customer_email directly to the event body. AnalyticsIngest rejected the payload, WarehouseSync queued the messages, and Customer360 fell 11 hours behind. SupportConsole agents lost fresh order timelines until the event schema was corrected.

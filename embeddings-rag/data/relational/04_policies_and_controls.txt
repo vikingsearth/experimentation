@@ -1,0 +1,16 @@
+TechVista Operations Knowledge Base: Policies and Controls
+
+POL-021 Change Approval Policy:
+Any production change to a customer-facing service on Friday requires two approvers and a documented rollback plan. Customer-facing services include CustomerPortal, AuthGateway, SessionService, and PaymentsAPI.
+
+POL-024 Key Rotation Policy:
+OAuth signing keys used by AuthGateway must be rotated every 90 days by the Identity team. KeyVaultSync is the distribution mechanism for those keys.
+
+POL-031 Analytics Data Policy:
+Services may not publish raw email addresses, phone numbers, or card tokens onto analytics-bound event streams. AnalyticsIngest blocks any event payload that violates this rule.
+
+POL-041 Incident Command Policy:
+A Sev-1 incident must name an incident commander and a communications lead within fifteen minutes. Platform Operations usually provides the incident commander for cross-team outages.
+
+POL-052 Dependency Change Policy:
+A team changing an event schema consumed by another team must announce the change in the shared architecture channel and update the owning runbook before deployment.

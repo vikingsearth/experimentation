@@ -1,0 +1,23 @@
+TechVista Operations Knowledge Base: Services and Repositories
+
+CustomerPortal is the public web application used for login, checkout, and order history. It is maintained by the Customer Experience team. Its main repository is repo-customer-portal.
+
+AuthGateway validates user credentials and exchanges OAuth tokens. It is owned by the Identity team. Repository: repo-auth-gateway.
+
+SessionService manages session state and refresh tokens for CustomerPortal. It is owned by the Identity team. Repository: repo-session-service.
+
+PaymentsAPI handles pricing, checkout authorization, and payment capture requests from CustomerPortal. It is owned by the Payments team. Repository: repo-payments-api.
+
+BillingLedger records invoices, payment settlements, and refund adjustments. It is owned by the Payments team. Repository: repo-billing-ledger.
+
+RiskScoring evaluates fraud and checkout risk signals for PaymentsAPI. It is co-developed by Payments and Data Platform, but operational ownership sits with the Payments team. Repository: repo-risk-scoring.
+
+EventBridge routes internal domain events between services. It is owned by Platform Operations. Repository: repo-event-bridge.
+
+NotificationWorker sends email and SMS updates after checkout and refund events arrive on EventBridge. It is owned by Platform Operations. Repository: repo-notification-worker.
+
+WarehouseSync copies approved order and revenue events from EventBridge into Customer360 for analytics. It is owned by Platform Operations. Repository: repo-warehouse-sync.
+
+FeatureStore serves model features to RiskScoring. It is owned by the Data Platform team. Repository: repo-feature-store.
+
+AnalyticsIngest validates analytics schemas before data reaches Customer360. It is owned by the Data Platform team. Repository: repo-analytics-ingest.

@@ -1,0 +1,11 @@
+TechVista Operations Knowledge Base: People and Teams
+
+The Platform Operations team maintains EventBridge, NotificationWorker, WarehouseSync, and the shared incident command process. The engineering manager is Mia Patel. Senior site reliability engineer Lucas Meyer is the primary incident commander for Platform Operations.
+
+The Payments team owns PaymentsAPI, BillingLedger, and the operational side of RiskScoring. The engineering manager is Sarah Ndlovu. Principal engineer Omar Daniels is the technical owner for BillingLedger migrations and settlement event contracts.
+
+The Identity team owns AuthGateway, SessionService, and KeyVaultSync. The engineering manager is Ethan Jacobs. Security engineer Nandi Mokoena handles signing key rotation and OAuth client issues.
+
+The Data Platform team owns FeatureStore, AnalyticsIngest, and Customer360. The engineering manager is Priya Naidoo. Staff data engineer Chen Liu is responsible for analytics schema enforcement and ingestion quality gates.
+
+The Customer Experience team owns CustomerPortal and SupportConsole. The engineering manager is Daniel Ross. Senior engineer Ava Smith coordinates checkout experience changes with the Payments team.

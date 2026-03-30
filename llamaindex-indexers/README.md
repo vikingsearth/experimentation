@@ -60,8 +60,15 @@ No OpenAI API key is needed -- the experiment uses:
 The default local model is:
 - Ollama model: `qwen2.5:3b-instruct`
 
-You can swap models by changing `OLLAMA_MODEL` in `.env`. Two local candidates already
-downloaded on this machine are `qwen2.5:3b` / `qwen2.5:3b-instruct` and `llama3.2:3b`.
+You can swap models by changing `OLLAMA_MODEL` in `.env`. The two local candidates used
+for comparison are `qwen2.5:3b-instruct` and `llama3.2:3b`.
+
+Current recommendation:
+- Keep `qwen2.5:3b-instruct` as the default when you care most about tree-summary quality.
+- Keep `llama3.2:3b` in reserve when you care more about build/query speed.
+- The included `src/07_benchmark_models.py` script measures speed and source-hit counts.
+  In current runs, that script favored `llama3.2:3b` on performance, while manual review
+  of summary quality still favored `qwen2.5:3b-instruct`.
 
 Optional tuning variables:
 - `OLLAMA_BASE_URL=http://127.0.0.1:11434` to target a different Ollama server
@@ -89,6 +96,28 @@ useful for Ollama model selection, tree fanout, and timeout settings.
 
 **Start with `06_compare_all.py`** if you just want the key takeaway.
 
+If you want to compare local Ollama models directly, run:
+
+```bash
+python src/07_benchmark_models.py
+```
+
+That benchmark now does two extra things by default:
+- Stops any already-loaded Ollama models, then warms the target model before timing.
+- Prints short qualitative snapshots so you can compare summary phrasing, not just speed.
+
+You can also pass explicit model names:
+
+```bash
+python src/07_benchmark_models.py --models qwen2.5:3b-instruct llama3.2:3b
+```
+
+If you want a faster, less controlled run, you can disable either extra step:
+
+```bash
+python src/07_benchmark_models.py --skip-clean-warmup --skip-qualitative
+```
+
 ## What to Expect
 
 The comparison script runs 5 queries across all 4 index types and shows:
@@ -99,6 +128,10 @@ The comparison script runs 5 queries across all 4 index types and shows:
 
 Key finding: **VectorStoreIndex is the best default choice**, but combining multiple
 index types with a RouterQueryEngine gives the best overall results.
+
+Operational finding: there is a real tradeoff between the two local Ollama models.
+`llama3.2:3b` is currently faster in the automated benchmark, while
+`qwen2.5:3b-instruct` still looks stronger for the qualitative `TreeIndex` summary output.
 
 ## Research Notes
 

@@ -18,7 +18,7 @@ The existing implementation covers one narrow but useful slice of the space:
 - One embedding model.
 - One vector database backend: ChromaDB.
 - Dense, lexical, and hybrid retrieval over the same local corpus.
-- Retrieval scoring only, not answer-generation benchmarking.
+- A relational harness that now separates retrieval scoring from answer-generation benchmarking.
 
 That remains a valid baseline, but it is no longer the full intended scope of the project.
 
@@ -113,6 +113,8 @@ The refactor should introduce a benchmark harness that evaluates more than retri
 - Simple correctness heuristics for deterministic questions.
 - Groundedness: whether the answer is supported by retrieved evidence.
 - Citation or evidence trace quality where the baseline supports it.
+
+Implementation note: the relational benchmark now generates answers for every baseline with the same local Ollama model, then reports retrieval and answer summaries separately so the no-retrieval CAG-style path is not evaluated through a special-case scoring path.
 
 ### Performance Metrics
 

@@ -11,7 +11,7 @@ import src._ssl_workaround  # noqa: F401, E402
 
 from sentence_transformers import SentenceTransformer
 
-from src.cag import answer_with_cag
+from src.cag import answer_with_cag, answer_with_evidence
 from src.config import (
     CAG_OLLAMA_MODEL,
     EMBEDDING_MODEL,
@@ -51,6 +51,11 @@ def parse_args() -> argparse.Namespace:
         default=TOP_K,
         help="Number of evidence items to show",
     )
+    parser.add_argument(
+        "--evidence-only",
+        action="store_true",
+        help="Show retrieved evidence only and skip shared answer generation",
+    )
     return parser.parse_args()
 
 
@@ -85,6 +90,17 @@ def print_results(results: list, baseline: str) -> None:
         print(f"  [{index}] {detail}")
         print(f"      {result.text}")
         print()
+
+
+def print_answer(response, model_name: str) -> None:
+    cited_files = ", ".join(response.cited_files) or "none"
+    print("  Answer")
+    print("  --------------------------------------------------------------")
+    print(
+        f"  confidence={response.confidence:.4f} | model={model_name} | cited_files={cited_files}"
+    )
+    print(f"      {response.answer}")
+    print()
 
 
 def main() -> None:
@@ -170,6 +186,12 @@ def main() -> None:
             results = query_graph(graph, question, top_k=args.top_k)
 
         print_results(results, args.baseline)
+        if not args.evidence_only:
+            if args.baseline == "cag":
+                print_answer(cag_response, CAG_OLLAMA_MODEL)
+            else:
+                answer = answer_with_evidence(question, results)
+                print_answer(answer, CAG_OLLAMA_MODEL)
 
 
 if __name__ == "__main__":

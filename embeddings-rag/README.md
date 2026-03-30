@@ -73,9 +73,12 @@ Runs 8 predefined test questions against all strategies. Produces a comparison t
 python src/query_relational.py --baseline graph "Which policies were violated by the 2026-04-18 BillingLedger event change?"
 python src/query_relational.py --baseline hybrid --strategy recursive "What downstream systems are involved after PaymentsAPI emits checkout.completed?"
 python src/query_relational.py --baseline cag "Which repositories should be inspected first if checkout failures are caused by fraud decision latency upstream of payment capture?"
+python src/query_relational.py --baseline hybrid --evidence-only --strategy recursive "What downstream systems are involved after PaymentsAPI emits checkout.completed?"
 ```
 
 Queries the synthetic relational corpus using one of five baseline families: `dense`, `lexical`, `hybrid`, `graph`, or `cag`.
+
+Dense, lexical, hybrid, and graph now use the same local answer-generation layer as the CAG-style baseline, so you can compare retrieved evidence and final answers under the same model. Use `--evidence-only` when you want to inspect retrieval behavior without generating an answer.
 
 `cag` is currently implemented as an honest prompt-preload baseline over the full relational corpus using a local Ollama model, not as a persistent KV-cache implementation.
 
@@ -87,7 +90,7 @@ python src/benchmark_relational.py --baseline graph
 python src/benchmark_relational.py --baseline cag
 ```
 
-Benchmarks the labeled multi-hop question set across the relational baselines. This now covers retrieval baselines and a no-retrieval CAG-style baseline in one harness.
+Benchmarks the labeled multi-hop question set across the relational baselines. The harness now reports separate retrieval and answer summaries, using the same local Ollama model to generate answers for every baseline while leaving retrieval metrics only for the baselines that actually retrieve evidence.
 
 ## What to Expect
 

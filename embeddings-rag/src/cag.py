@@ -1,4 +1,4 @@
-"""CAG-style no-retrieval baseline over the relational corpus."""
+"""Local answer-generation helpers for CAG-style and evidence-backed baselines."""
 
 from dataclasses import dataclass
 import json
@@ -26,6 +26,24 @@ def build_corpus_pack(documents: dict[str, str]) -> str:
     for filename, text in sorted(documents.items()):
         sections.append(f"## {filename}\n{text.strip()}")
     return "\n\n".join(sections)
+
+
+def build_evidence_pack(results: list) -> tuple[str, dict[str, str]]:
+    """Build a stable evidence pack from retrieved chunks or graph facts."""
+    sections = []
+    citation_aliases = {}
+    for index, result in enumerate(results, start=1):
+        source = result.metadata.get("source", f"evidence_{index}")
+        kind = result.metadata.get("kind", "chunk")
+        score = result.score
+        evidence_id = f"evidence_{index}"
+        citation_aliases[evidence_id] = source
+        citation_aliases[f"{evidence_id}.txt"] = source
+        citation_aliases[source] = source
+        sections.append(
+            f"## {source} | evidence_id={evidence_id} | kind={kind} | score={score:.4f}\n{result.text.strip()}"
+        )
+    return "\n\n".join(sections), citation_aliases
 
 
 def _extract_json_object(payload: str) -> dict:
@@ -73,19 +91,34 @@ def _run_ollama_cli(prompt: str, model: str, timeout_seconds: int) -> str:
     return completed.stdout
 
 
-def answer_with_cag(
+def _normalize_cited_files(cited_files: list[str], citation_aliases: dict[str, str] | None) -> list[str]:
+    if not citation_aliases:
+        return cited_files
+
+    normalized = []
+    seen = set()
+    for cited_file in cited_files:
+        normalized_file = citation_aliases.get(cited_file, cited_file)
+        if normalized_file not in seen:
+            seen.add(normalized_file)
+            normalized.append(normalized_file)
+    return normalized
+
+
+def _generate_answer(
     question: str,
-    documents: dict[str, str],
+    context_pack: str,
+    context_label: str,
+    citation_aliases: dict[str, str] | None = None,
     model: str = CAG_OLLAMA_MODEL,
     api_url: str = CAG_OLLAMA_URL,
     timeout_seconds: int = CAG_REQUEST_TIMEOUT,
 ) -> CAGResponse:
-    """Generate an answer using the full corpus as preloaded context."""
-    corpus_pack = build_corpus_pack(documents)
+    """Generate a structured answer from a provided context pack."""
     prompt = f"""
-You are answering questions from a small, fixed knowledge base that has already been fully loaded into context.
+You are answering questions from a fixed context pack.
 Do not retrieve external information and do not invent missing facts.
-Use only the corpus below.
+Use only the provided {context_label}.
 
 Return JSON only with this exact schema:
 {{
@@ -97,14 +130,14 @@ Return JSON only with this exact schema:
 Rules:
 - Keep the answer concise but complete.
 - If the question asks for multiple items, include all of them, not just the first one.
-- Preserve exact service names, repository names, policy IDs, incident IDs, and team names from the corpus.
+- Preserve exact service names, repository names, policy IDs, incident IDs, and team names from the context.
 - Cite all filenames that directly support the answer, not just one of them.
 - Prefer a one- or two-sentence answer that includes the full dependency or ownership chain when the question is relational.
-- If the corpus does not support the answer, say so explicitly and use an empty file list.
+- If the context does not support the answer, say so explicitly and use an empty file list.
 - Confidence must be a number between 0 and 1, and it should be lower when the answer may be incomplete.
 
-Corpus:
-{corpus_pack}
+Context pack:
+{context_pack}
 
 Question: {question}
 """.strip()
@@ -147,6 +180,7 @@ Question: {question}
     if not isinstance(cited_files, list):
         cited_files = []
     cited_files = [str(item).strip() for item in cited_files if str(item).strip()]
+    cited_files = _normalize_cited_files(cited_files, citation_aliases)
 
     try:
         confidence = float(inner.get("confidence", 0.0))
@@ -160,4 +194,43 @@ Question: {question}
         cited_files=cited_files,
         confidence=confidence,
         raw_response=outer.get("response", ""),
+    )
+
+
+def answer_with_evidence(
+    question: str,
+    results: list,
+    model: str = CAG_OLLAMA_MODEL,
+    api_url: str = CAG_OLLAMA_URL,
+    timeout_seconds: int = CAG_REQUEST_TIMEOUT,
+) -> CAGResponse:
+    """Generate an answer from retrieved evidence using the shared local model."""
+    evidence_pack, citation_aliases = build_evidence_pack(results)
+    return _generate_answer(
+        question,
+        evidence_pack,
+        context_label="retrieved evidence",
+        citation_aliases=citation_aliases,
+        model=model,
+        api_url=api_url,
+        timeout_seconds=timeout_seconds,
+    )
+
+
+def answer_with_cag(
+    question: str,
+    documents: dict[str, str],
+    model: str = CAG_OLLAMA_MODEL,
+    api_url: str = CAG_OLLAMA_URL,
+    timeout_seconds: int = CAG_REQUEST_TIMEOUT,
+) -> CAGResponse:
+    """Generate an answer using the full corpus as preloaded context."""
+    corpus_pack = build_corpus_pack(documents)
+    return _generate_answer(
+        question,
+        corpus_pack,
+        context_label="full corpus context",
+        model=model,
+        api_url=api_url,
+        timeout_seconds=timeout_seconds,
     )

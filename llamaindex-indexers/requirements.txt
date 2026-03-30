@@ -1,9 +1,7 @@
 llama-index-core==0.14.19
-llama-index-llms-llama-cpp==0.6.0
+llama-index-llms-ollama==0.10.1
 llama-index-embeddings-huggingface==0.7.0
 llama-index-readers-file==0.6.0
-huggingface-hub>=1.8.0
-llama-cpp-python==0.3.18
 transformers>=4.30.0
 torch>=2.0.0
 python-dotenv>=1.0.0

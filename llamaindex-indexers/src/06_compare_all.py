@@ -23,7 +23,7 @@ try:
 except ImportError:
     pass
 
-from local_llm import build_local_llm
+from ollama_llm import build_local_llm
 
 
 TREE_NUM_CHILDREN = int(os.getenv("TREE_NUM_CHILDREN", "3"))
@@ -44,8 +44,8 @@ def build_all_indices(documents):
     Settings.embed_model = HuggingFaceEmbedding(
         model_name="BAAI/bge-small-en-v1.5"
     )
-    print("  Loading local GGUF LLM...", end=" ", flush=True)
-    Settings.llm = build_local_llm(PROJECT_ROOT)
+    print("  Loading Ollama LLM...", end=" ", flush=True)
+    Settings.llm = build_local_llm()
     print("done")
     Settings.chunk_size = 256
     Settings.chunk_overlap = 30

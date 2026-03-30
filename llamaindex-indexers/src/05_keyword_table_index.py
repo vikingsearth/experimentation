@@ -23,7 +23,7 @@ try:
 except ImportError:
     pass
 
-from local_llm import build_local_llm
+from ollama_llm import build_local_llm
 
 
 def main():
@@ -41,7 +41,7 @@ def main():
     Settings.embed_model = HuggingFaceEmbedding(
         model_name="BAAI/bge-small-en-v1.5"
     )
-    Settings.llm = build_local_llm(PROJECT_ROOT)
+    Settings.llm = build_local_llm()
     Settings.chunk_size = 256
     Settings.chunk_overlap = 30
 

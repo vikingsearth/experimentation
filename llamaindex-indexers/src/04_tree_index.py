@@ -16,7 +16,7 @@ try:
 except ImportError:
     pass
 
-from local_llm import build_local_llm
+from ollama_llm import build_local_llm
 
 
 def describe_tree(index):
@@ -54,8 +54,8 @@ def main():
     Settings.embed_model = HuggingFaceEmbedding(
         model_name="BAAI/bge-small-en-v1.5"
     )
-    print("Loading local GGUF LLM (downloads Q8_0 on first run)...")
-    Settings.llm = build_local_llm(PROJECT_ROOT)
+    print("Loading Ollama LLM...")
+    Settings.llm = build_local_llm()
     Settings.chunk_size = 256
     Settings.chunk_overlap = 30
 

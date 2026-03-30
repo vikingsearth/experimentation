@@ -69,8 +69,9 @@ llamaindex-indexers/
 
 - Use **HuggingFace embeddings** (free, local) to avoid requiring an OpenAI API key
   for embeddings
-- Use **OpenAI GPT-4o-mini** for LLM calls (required for synthesis, tree building, etc.)
-- Provide a **mock/offline mode** that shows pre-recorded outputs for users without API keys
+- Use **Ollama** for local LLM calls required for synthesis and tree building
+- Default local model is `qwen2.5:3b-instruct`; `llama3.2:3b` is kept for comparison
+- Use a repeatable benchmark script to compare local model speed and qualitative output
 - Each script is standalone and runnable independently
 - The comparison script (`06_compare_all.py`) ties everything together
 
@@ -78,18 +79,32 @@ llamaindex-indexers/
 
 - VectorStoreIndex: Best for specific factual queries, fast, good default
 - SummaryIndex: Best for "tell me everything" queries, slow but thorough
-- TreeIndex: Best for hierarchical/overview queries, balanced cost
+- TreeIndex: Best for hierarchical/overview queries in principle, but quality is sensitive
+  to local model strength and is currently the weakest part of the experiment
 - KeywordTableIndex: Best for keyword-specific lookups, cheapest to build
+
+## Current Implementation Status
+
+- The experiment now runs fully offline except for local Ollama and Hugging Face model downloads.
+- `MockLLM` and remote OpenAI dependencies have been removed from the actual workflow.
+- `SimpleKeywordTableIndex` is used instead of the GPT-backed keyword table variant.
+- Tree building is eager so the demo uses a real summary hierarchy.
+- `src/07_benchmark_models.py` benchmarks `qwen2.5:3b-instruct` and `llama3.2:3b`
+  with a clean Ollama warmup and short qualitative snapshots.
+- Latest benchmark run on 2026-03-30 showed `llama3.2:3b` was materially faster,
+  while both 3B models still produced weak root-summary output for `TreeIndex`.
 
 ## Time Estimate
 
 - A reader should be able to understand the experiment in ~5 minutes by reading the README
   and the comparison script output
-- Running the full experiment takes ~2-3 minutes (mostly LLM call latency)
+- Running `06_compare_all.py` is still short enough for interactive use, but the full
+  two-model benchmark takes several minutes because `TreeIndex` build time dominates
 
 ## Review Notes
 
 - Plan is simple: 4 index types, 5 documents, 5 queries
 - Each script is short and self-contained
 - The comparison script provides the "aha moment"
-- No complex infrastructure needed (in-memory vector store, local embeddings)
+- No external hosted API is required for the current setup
+- The main open limitation is TreeIndex summary quality with small local models

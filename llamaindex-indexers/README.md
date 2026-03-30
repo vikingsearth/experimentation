@@ -64,11 +64,10 @@ You can swap models by changing `OLLAMA_MODEL` in `.env`. The two local candidat
 for comparison are `qwen2.5:3b-instruct` and `llama3.2:3b`.
 
 Current recommendation:
-- Keep `qwen2.5:3b-instruct` as the default when you care most about tree-summary quality.
-- Keep `llama3.2:3b` in reserve when you care more about build/query speed.
-- The included `src/07_benchmark_models.py` script measures speed and source-hit counts.
-  In current runs, that script favored `llama3.2:3b` on performance, while manual review
-  of summary quality still favored `qwen2.5:3b-instruct`.
+- Keep `qwen2.5:3b-instruct` as the default if you want the safer instruction-tuned baseline.
+- Keep `llama3.2:3b` available when you care more about build/query speed.
+- The included `src/07_benchmark_models.py` script measures speed, source-hit counts,
+  and prints short qualitative snapshots for manual review.
 
 Optional tuning variables:
 - `OLLAMA_BASE_URL=http://127.0.0.1:11434` to target a different Ollama server
@@ -118,6 +117,20 @@ If you want a faster, less controlled run, you can disable either extra step:
 python src/07_benchmark_models.py --skip-clean-warmup --skip-qualitative
 ```
 
+Latest checked run on 2026-03-30 using clean warmup:
+
+| Model | Tree build | Avg Tree query | Source-hit total | Qualitative note |
+|-------|------------|----------------|------------------|------------------|
+| `qwen2.5:3b-instruct` | `185.59s` | `0.375s` | `18` | More conservative baseline, but still weak on root-summary quality |
+| `llama3.2:3b` | `141.49s` | `0.366s` | `18` | Clearly faster, but root-summary output is still weak on this corpus |
+
+Current conclusion from that run:
+- `llama3.2:3b` is the better speed pick.
+- `qwen2.5:3b-instruct` remains the safer default because it is instruction-tuned.
+- Neither 3B model is producing a genuinely strong `TreeIndex` root summary here, so the
+  next real improvement would come from a better local model or a different tree strategy,
+  not from more benchmark churn between these two.
+
 ## What to Expect
 
 The comparison script runs 5 queries across all 4 index types and shows:
@@ -130,13 +143,18 @@ Key finding: **VectorStoreIndex is the best default choice**, but combining mult
 index types with a RouterQueryEngine gives the best overall results.
 
 Operational finding: there is a real tradeoff between the two local Ollama models.
-`llama3.2:3b` is currently faster in the automated benchmark, while
-`qwen2.5:3b-instruct` still looks stronger for the qualitative `TreeIndex` summary output.
+`llama3.2:3b` is currently faster in the automated benchmark. `qwen2.5:3b-instruct`
+is still the safer default for a tiny local instruct model, but neither model is giving
+strong `TreeIndex` root summaries on this dataset.
 
 ## Research Notes
+
+For a visual walkthrough, see `docs/diagrams.md`.
 
 See `docs/research/` for detailed notes on:
 - LlamaIndex architecture and core concepts
 - Deep dive into each index type's internals
 - Comparison with LangChain and Haystack
 - Advanced retrieval strategies (hybrid search, reranking, composable indices)
+
+See `docs/planning/plan.md` for the implementation plan and current status notes.

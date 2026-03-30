@@ -67,6 +67,24 @@ python src/compare.py --retrieval hybrid
 
 Runs 8 predefined test questions against all strategies. Produces a comparison table with retrieval scores and keyword relevance for the selected retrieval mode.
 
+### 4. Query the relational corpus
+
+```bash
+python src/query_relational.py --baseline graph "Which policies were violated by the 2026-04-18 BillingLedger event change?"
+python src/query_relational.py --baseline hybrid --strategy recursive "What downstream systems are involved after PaymentsAPI emits checkout.completed?"
+```
+
+Queries the synthetic relational corpus using one of four baseline families: `dense`, `lexical`, `hybrid`, or `graph`.
+
+### 5. Benchmark the relational corpus
+
+```bash
+python src/benchmark_relational.py
+python src/benchmark_relational.py --baseline graph
+```
+
+Benchmarks the labeled multi-hop question set across the relational baselines. This is the current GraphRAG-oriented harness for comparing graph retrieval with non-graph baselines.
+
 ## What to Expect
 
 The comparison shows that **recursive chunking** typically performs best overall because it preserves paragraph boundaries while keeping chunks within a size limit. Semantic chunking produces the most focused chunks but creates many small pieces. Fixed-size chunking is the simplest but splits mid-sentence.
@@ -136,6 +154,8 @@ Planned additions expand beyond this into hybrid retrieval, graph-based retrieva
 The repository now includes a separate relational corpus in [data/relational/README.md](data/relational/README.md). It is a small synthetic company operations knowledge base with labeled multi-hop questions in `questions.json`.
 
 It is intentionally kept outside the current top-level tutorial corpus so the existing dense, lexical, and hybrid chunking benchmark remains stable while future GraphRAG work gets a dataset that actually rewards relationship-aware retrieval.
+
+The current GraphRAG implementation is deliberately lightweight: it builds a local entity-evidence graph from the relational corpus and retrieves connected evidence across hops. It is a practical baseline, not a full LLM-built knowledge graph pipeline.
 
 ## Research Notes
 

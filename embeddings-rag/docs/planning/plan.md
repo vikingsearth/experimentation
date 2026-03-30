@@ -61,6 +61,11 @@ Questions it answers:
 - Does graph retrieval help on multi-hop or dependency-heavy questions?
 - What complexity is introduced relative to dense or hybrid retrieval?
 
+Current implementation status:
+- A lightweight local GraphRAG baseline now exists over the relational corpus.
+- The current graph is an entity-evidence graph rather than an LLM-built knowledge graph.
+- A dedicated relational benchmark script compares graph retrieval against dense, lexical, and hybrid baselines.
+
 ## Datasets
 
 The benchmark will use at least two dataset types.

@@ -11,7 +11,9 @@ import src._ssl_workaround  # noqa: F401, E402
 
 from sentence_transformers import SentenceTransformer
 
+from src.cag import answer_with_cag
 from src.config import (
+    CAG_OLLAMA_MODEL,
     EMBEDDING_MODEL,
     RELATIONAL_BASELINES,
     RELATIONAL_DEFAULT_STRATEGY,
@@ -20,6 +22,7 @@ from src.config import (
 from src.corpus import build_chunk_catalog, load_relational_documents
 from src.graph_rag import build_relational_graph, query_graph
 from src.retrieval import (
+    RetrievedChunk,
     build_dense_retrievers,
     build_lexical_retrievers,
     query_dense_retriever_strategy,
@@ -52,6 +55,19 @@ def parse_args() -> argparse.Namespace:
 
 
 def print_results(results: list, baseline: str) -> None:
+    if baseline == "cag":
+        if not results:
+            print("  (no result)")
+            return
+        response = results[0]
+        cited_files = ", ".join(response.metadata.get("cited_files", [])) or "none"
+        print(
+            f"  answer_score={response.score:.4f} | model={response.metadata.get('model')} | cited_files={cited_files}"
+        )
+        print(f"      {response.text}")
+        print()
+        return
+
     if not results:
         print("  (no results)")
         return
@@ -103,7 +119,9 @@ def main() -> None:
         print(f"\n{'=' * 78}")
         print(f"  QUESTION: {question}")
         print(f"  Baseline: {args.baseline}")
-        if args.baseline != "graph":
+        if args.baseline == "cag":
+            print(f"  Model: {CAG_OLLAMA_MODEL}")
+        elif args.baseline != "graph":
             print(f"  Chunking strategy: {args.strategy}")
         print(f"{'=' * 78}")
 
@@ -133,6 +151,21 @@ def main() -> None:
                 top_k=args.top_k,
                 question_embedding=query_embedding,
             )
+        elif args.baseline == "cag":
+            cag_response = answer_with_cag(question, documents)
+            results = [
+                RetrievedChunk(
+                    id="cag_response",
+                    text=cag_response.answer,
+                    metadata={
+                        "model": CAG_OLLAMA_MODEL,
+                        "cited_files": cag_response.cited_files,
+                        "raw_response": cag_response.raw_response,
+                    },
+                    score=cag_response.confidence,
+                    score_breakdown={"cag": cag_response.confidence},
+                )
+            ]
         else:
             results = query_graph(graph, question, top_k=args.top_k)
 

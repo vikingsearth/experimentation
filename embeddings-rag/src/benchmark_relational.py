@@ -11,7 +11,9 @@ import src._ssl_workaround  # noqa: F401, E402
 
 from sentence_transformers import SentenceTransformer
 
+from src.cag import answer_with_cag
 from src.config import (
+    CAG_OLLAMA_MODEL,
     EMBEDDING_MODEL,
     RELATIONAL_BASELINES,
     RELATIONAL_DEFAULT_STRATEGY,
@@ -82,11 +84,39 @@ def score_results(results: list, question) -> dict[str, float]:
     }
 
 
+def score_cag_response(response, question) -> dict[str, float]:
+    answer_text = response.answer.lower()
+    matched_terms = sum(1 for term in question.expected_terms if term.lower() in answer_text)
+    term_coverage = matched_terms / len(question.expected_terms) if question.expected_terms else 0.0
+
+    matched_entities = sum(1 for entity in question.entities if entity.lower() in answer_text)
+    entity_coverage = matched_entities / len(question.entities) if question.entities else 0.0
+
+    cited_files = set(response.cited_files)
+    file_coverage = (
+        len([source for source in question.supporting_files if source in cited_files])
+        / len(question.supporting_files)
+        if question.supporting_files
+        else 0.0
+    )
+
+    combined = (0.45 * term_coverage) + (0.35 * entity_coverage) + (0.20 * file_coverage)
+
+    return {
+        "avg_score": response.confidence,
+        "term_coverage": term_coverage,
+        "entity_coverage": entity_coverage,
+        "file_coverage": file_coverage,
+        "combined": combined,
+    }
+
+
 def run_baseline(
     baseline: str,
     questions,
     strategy: str,
     top_k: int,
+    documents,
     graph,
     model,
     dense_retrievers,
@@ -102,7 +132,9 @@ def run_baseline(
 
     print(f"\n{'=' * 88}")
     print(f"  Baseline: {baseline.upper()}")
-    if baseline != "graph":
+    if baseline == "cag":
+        print(f"  Model: {CAG_OLLAMA_MODEL}")
+    elif baseline != "graph":
         print(f"  Chunking strategy: {strategy}")
     print(f"{'=' * 88}")
     print(
@@ -123,6 +155,7 @@ def run_baseline(
                 top_k=top_k,
                 question_embedding=query_embedding,
             )
+            metrics = score_results(results, question)
         elif baseline == "lexical":
             results = query_lexical_strategy(
                 lexical_retrievers,
@@ -130,6 +163,7 @@ def run_baseline(
                 question.question,
                 top_k=top_k,
             )
+            metrics = score_results(results, question)
         elif baseline == "hybrid":
             results = query_hybrid_retriever_strategy(
                 dense_retrievers,
@@ -139,10 +173,14 @@ def run_baseline(
                 top_k=top_k,
                 question_embedding=query_embedding,
             )
+            metrics = score_results(results, question)
+        elif baseline == "cag":
+            response = answer_with_cag(question.question, documents)
+            metrics = score_cag_response(response, question)
+            results = []
         else:
             results = query_graph(graph, question.question, top_k=top_k)
-
-        metrics = score_results(results, question)
+            metrics = score_results(results, question)
         for key, value in metrics.items():
             scores[key].append(value)
 
@@ -175,7 +213,7 @@ def main() -> None:
     dense_retrievers = None
     lexical_retrievers = None
 
-    baselines = [args.baseline] if args.baseline != "all" else ["dense", "lexical", "hybrid", "graph"]
+    baselines = [args.baseline] if args.baseline != "all" else ["dense", "lexical", "hybrid", "graph", "cag"]
     if any(baseline in {"dense", "lexical", "hybrid"} for baseline in baselines):
         print(f"Loading embedding model: {EMBEDDING_MODEL}...")
         model = SentenceTransformer(EMBEDDING_MODEL)
@@ -190,6 +228,7 @@ def main() -> None:
             questions,
             args.strategy,
             args.top_k,
+            documents,
             graph,
             model,
             dense_retrievers,

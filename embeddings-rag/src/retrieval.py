@@ -6,6 +6,8 @@ import math
 import re
 
 import chromadb
+import numpy as np
+from sentence_transformers import SentenceTransformer
 
 from src.config import TOP_K
 from src.corpus import ChunkRecord
@@ -23,6 +25,66 @@ class RetrievedChunk:
     metadata: dict
     score: float
     score_breakdown: dict[str, float] = field(default_factory=dict)
+
+
+class DenseRetriever:
+    """An in-memory dense retriever over chunk records."""
+
+    def __init__(
+        self,
+        records: list[ChunkRecord],
+        model: SentenceTransformer,
+    ):
+        self.records = records
+        self.model = model
+        self.embeddings = np.array([])
+        if records:
+            self.embeddings = np.asarray(
+                self.model.encode(
+                    [record.text for record in records],
+                    show_progress_bar=False,
+                ),
+                dtype=float,
+            )
+
+    def search(
+        self,
+        question: str,
+        top_k: int = TOP_K,
+        question_embedding: list[float] | None = None,
+    ) -> list[RetrievedChunk]:
+        """Return cosine-similarity ranked chunks for a query."""
+        if not self.records:
+            return []
+
+        if question_embedding is None:
+            query_vector = np.asarray(
+                self.model.encode([question], show_progress_bar=False)[0],
+                dtype=float,
+            )
+        else:
+            query_vector = np.asarray(question_embedding, dtype=float)
+
+        doc_norms = np.linalg.norm(self.embeddings, axis=1)
+        query_norm = np.linalg.norm(query_vector)
+        similarities = np.zeros(len(self.records), dtype=float)
+        nonzero = (doc_norms > 0) & (query_norm > 0)
+        similarities[nonzero] = (
+            np.dot(self.embeddings[nonzero], query_vector)
+            / (doc_norms[nonzero] * query_norm)
+        )
+
+        top_indices = np.argsort(similarities)[::-1][:top_k]
+        return [
+            RetrievedChunk(
+                id=self.records[index].id,
+                text=self.records[index].text,
+                metadata=self.records[index].metadata,
+                score=float(similarities[index]),
+                score_breakdown={"dense": float(similarities[index])},
+            )
+            for index in top_indices
+        ]
 
 
 def _tokenize(text: str) -> list[str]:
@@ -83,6 +145,17 @@ def query_dense_strategy(
             )
         )
     return formatted
+
+
+def build_dense_retrievers(
+    catalog: dict[str, list[ChunkRecord]],
+    model: SentenceTransformer,
+) -> dict[str, DenseRetriever]:
+    """Build one in-memory dense retriever per chunking strategy."""
+    return {
+        strategy: DenseRetriever(records, model)
+        for strategy, records in catalog.items()
+    }
 
 
 class LexicalRetriever:
@@ -165,43 +238,13 @@ def build_lexical_retrievers(
     }
 
 
-def query_lexical_strategy(
-    retrievers: dict[str, LexicalRetriever],
-    strategy: str,
-    question: str,
-    top_k: int = TOP_K,
-) -> list[RetrievedChunk]:
-    """Query a strategy-specific lexical retriever."""
-    retriever = retrievers.get(strategy)
-    if retriever is None:
-        return []
-    return retriever.search(question, top_k=top_k)
-
-
-def query_hybrid_strategy(
-    client: chromadb.ClientAPI,
-    retrievers: dict[str, LexicalRetriever],
-    strategy: str,
-    question: str,
-    question_embedding: list[float],
+def combine_results(
+    dense_results: list[RetrievedChunk],
+    lexical_results: list[RetrievedChunk],
     top_k: int = TOP_K,
     dense_weight: float = 0.65,
 ) -> list[RetrievedChunk]:
-    """Fuse dense and lexical scores across a shared candidate set."""
-    candidate_k = max(top_k * 2, top_k)
-    dense_results = query_dense_strategy(
-        client,
-        strategy,
-        question_embedding,
-        top_k=candidate_k,
-    )
-    lexical_results = query_lexical_strategy(
-        retrievers,
-        strategy,
-        question,
-        top_k=candidate_k,
-    )
-
+    """Fuse dense and lexical results across a shared candidate set."""
     dense_scores = {result.id: result.score for result in dense_results}
     lexical_scores = {result.id: result.score for result in lexical_results}
     dense_normalized = _normalize_scores(dense_scores)
@@ -236,3 +279,98 @@ def query_hybrid_strategy(
 
     combined.sort(key=lambda item: item.score, reverse=True)
     return combined[:top_k]
+
+
+def query_lexical_strategy(
+    retrievers: dict[str, LexicalRetriever],
+    strategy: str,
+    question: str,
+    top_k: int = TOP_K,
+) -> list[RetrievedChunk]:
+    """Query a strategy-specific lexical retriever."""
+    retriever = retrievers.get(strategy)
+    if retriever is None:
+        return []
+    return retriever.search(question, top_k=top_k)
+
+
+def query_dense_retriever_strategy(
+    retrievers: dict[str, DenseRetriever],
+    strategy: str,
+    question: str,
+    top_k: int = TOP_K,
+    question_embedding: list[float] | None = None,
+) -> list[RetrievedChunk]:
+    """Query a strategy-specific in-memory dense retriever."""
+    retriever = retrievers.get(strategy)
+    if retriever is None:
+        return []
+    return retriever.search(
+        question,
+        top_k=top_k,
+        question_embedding=question_embedding,
+    )
+
+
+def query_hybrid_retriever_strategy(
+    dense_retrievers: dict[str, DenseRetriever],
+    lexical_retrievers: dict[str, LexicalRetriever],
+    strategy: str,
+    question: str,
+    top_k: int = TOP_K,
+    dense_weight: float = 0.65,
+    question_embedding: list[float] | None = None,
+) -> list[RetrievedChunk]:
+    """Fuse in-memory dense and lexical retrieval for a strategy."""
+    candidate_k = max(top_k * 2, top_k)
+    dense_results = query_dense_retriever_strategy(
+        dense_retrievers,
+        strategy,
+        question,
+        top_k=candidate_k,
+        question_embedding=question_embedding,
+    )
+    lexical_results = query_lexical_strategy(
+        lexical_retrievers,
+        strategy,
+        question,
+        top_k=candidate_k,
+    )
+    return combine_results(
+        dense_results,
+        lexical_results,
+        top_k=top_k,
+        dense_weight=dense_weight,
+    )
+
+
+def query_hybrid_strategy(
+    client: chromadb.ClientAPI,
+    retrievers: dict[str, LexicalRetriever],
+    strategy: str,
+    question: str,
+    question_embedding: list[float],
+    top_k: int = TOP_K,
+    dense_weight: float = 0.65,
+) -> list[RetrievedChunk]:
+    """Fuse dense and lexical scores across a shared candidate set."""
+    candidate_k = max(top_k * 2, top_k)
+    dense_results = query_dense_strategy(
+        client,
+        strategy,
+        question_embedding,
+        top_k=candidate_k,
+    )
+    lexical_results = query_lexical_strategy(
+        retrievers,
+        strategy,
+        question,
+        top_k=candidate_k,
+    )
+    return combine_results(
+        dense_results,
+        lexical_results,
+        top_k=top_k,
+        dense_weight=dense_weight,
+    )
+

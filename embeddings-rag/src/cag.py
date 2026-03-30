@@ -105,6 +105,48 @@ def _normalize_cited_files(cited_files: list[str], citation_aliases: dict[str, s
     return normalized
 
 
+def _normalize_string_list(value) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
+
+
+def _extract_fact_citations(supported_facts) -> list[str]:
+    citations = []
+    seen = set()
+    if not isinstance(supported_facts, list):
+        return citations
+
+    for fact in supported_facts:
+        if not isinstance(fact, dict):
+            continue
+        for source_file in _normalize_string_list(fact.get("source_files", [])):
+            if source_file not in seen:
+                seen.add(source_file)
+                citations.append(source_file)
+    return citations
+
+
+def _build_fallback_answer(supported_facts, missing_parts: list[str]) -> str:
+    statements = []
+    if isinstance(supported_facts, list):
+        for fact in supported_facts[:4]:
+            if not isinstance(fact, dict):
+                continue
+            subject = str(fact.get("subject", "")).strip()
+            relation = str(fact.get("relation", "")).strip()
+            obj = str(fact.get("object", "")).strip()
+            if subject and relation and obj:
+                statements.append(f"{subject} -> {relation} -> {obj}")
+
+    if missing_parts:
+        statements.append(f"Missing evidence for: {', '.join(missing_parts)}")
+
+    if statements:
+        return "; ".join(statements)
+    return "The provided context does not support a complete answer."
+
+
 def _generate_answer(
     question: str,
     context_pack: str,
@@ -122,19 +164,33 @@ Use only the provided {context_label}.
 
 Return JSON only with this exact schema:
 {{
-  "answer": "short factual answer",
+    "question_parts": ["ownership", "dependency"],
+    "supported_facts": [
+        {{
+            "subject": "Service or entity name",
+            "relation": "owned_by or depends_on or violated_policy or similar",
+            "object": "Team, service, policy, incident, or other target",
+            "source_files": ["filename.txt"]
+        }}
+    ],
+    "missing_parts": ["requested item that was not supported"],
+    "answer": "short factual answer",
   "cited_files": ["filename.txt"],
   "confidence": 0.0
 }}
 
 Rules:
+- First identify every distinct part of the question in question_parts.
+- Extract only directly supported facts into supported_facts before writing the final answer.
 - Keep the answer concise but complete.
-- If the question asks for multiple items, include all of them, not just the first one.
+- If the question asks for multiple items, include all of them in the final answer, not just the first one.
+- Do not collapse separate requests like owner, dependency, violated policy, impacted service, repository, or timeline into one partial answer.
 - Preserve exact service names, repository names, policy IDs, incident IDs, and team names from the context.
 - Cite all filenames that directly support the answer, not just one of them.
+- Cite filenames exactly as they appear in the context headings.
 - Prefer a one- or two-sentence answer that includes the full dependency or ownership chain when the question is relational.
-- If the context does not support the answer, say so explicitly and use an empty file list.
-- Confidence must be a number between 0 and 1, and it should be lower when the answer may be incomplete.
+- If any requested part is unsupported, list it in missing_parts and say so explicitly in the answer.
+- Confidence must be a number between 0 and 1, and it should be 0.5 or lower when any requested part is missing.
 
 Context pack:
 {context_pack}
@@ -148,7 +204,7 @@ Question: {question}
             "prompt": prompt,
             "stream": False,
             "format": "json",
-            "options": {"temperature": 0.1},
+            "options": {"temperature": 0.0},
         }
     ).encode("utf-8")
 
@@ -175,17 +231,25 @@ Question: {question}
         inner = _extract_json_object(cli_output)
         outer = {"response": cli_output}
 
+    missing_parts = _normalize_string_list(inner.get("missing_parts", []))
+    supported_facts = inner.get("supported_facts", [])
+
     answer = str(inner.get("answer", "")).strip()
-    cited_files = inner.get("cited_files", []) or []
-    if not isinstance(cited_files, list):
-        cited_files = []
-    cited_files = [str(item).strip() for item in cited_files if str(item).strip()]
+    if not answer:
+        answer = _build_fallback_answer(supported_facts, missing_parts)
+
+    cited_files = _normalize_string_list(inner.get("cited_files", []))
+    if not cited_files:
+        cited_files = _extract_fact_citations(supported_facts)
     cited_files = _normalize_cited_files(cited_files, citation_aliases)
 
     try:
         confidence = float(inner.get("confidence", 0.0))
     except (TypeError, ValueError):
         confidence = 0.0
+
+    if missing_parts:
+        confidence = min(confidence, 0.5)
 
     confidence = max(0.0, min(confidence, 1.0))
 

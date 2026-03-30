@@ -53,6 +53,11 @@ Questions it answers:
 
 Note: a true KV-cache implementation is desirable, but the first version may begin with a simpler no-retrieval baseline if model/runtime support makes persistent KV cache management too invasive for the initial refactor.
 
+Current implementation status:
+- A local no-retrieval baseline now exists over the relational corpus.
+- It uses a prompt-preload approach with a local Ollama model over the full corpus.
+- It is intentionally labeled CAG-style rather than true KV-cache CAG.
+
 ### 4. GraphRAG
 
 Build a lightweight knowledge graph from entities and relationships, then retrieve subgraphs or graph-neighborhood context for answering relational questions.
@@ -64,7 +69,7 @@ Questions it answers:
 Current implementation status:
 - A lightweight local GraphRAG baseline now exists over the relational corpus.
 - The current graph is an entity-evidence graph rather than an LLM-built knowledge graph.
-- A dedicated relational benchmark script compares graph retrieval against dense, lexical, and hybrid baselines.
+- A dedicated relational benchmark script compares graph retrieval against dense, lexical, hybrid, and CAG-style baselines.
 
 ## Datasets
 

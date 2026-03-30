@@ -72,18 +72,22 @@ Runs 8 predefined test questions against all strategies. Produces a comparison t
 ```bash
 python src/query_relational.py --baseline graph "Which policies were violated by the 2026-04-18 BillingLedger event change?"
 python src/query_relational.py --baseline hybrid --strategy recursive "What downstream systems are involved after PaymentsAPI emits checkout.completed?"
+python src/query_relational.py --baseline cag "Which repositories should be inspected first if checkout failures are caused by fraud decision latency upstream of payment capture?"
 ```
 
-Queries the synthetic relational corpus using one of four baseline families: `dense`, `lexical`, `hybrid`, or `graph`.
+Queries the synthetic relational corpus using one of five baseline families: `dense`, `lexical`, `hybrid`, `graph`, or `cag`.
+
+`cag` is currently implemented as an honest prompt-preload baseline over the full relational corpus using a local Ollama model, not as a persistent KV-cache implementation.
 
 ### 5. Benchmark the relational corpus
 
 ```bash
 python src/benchmark_relational.py
 python src/benchmark_relational.py --baseline graph
+python src/benchmark_relational.py --baseline cag
 ```
 
-Benchmarks the labeled multi-hop question set across the relational baselines. This is the current GraphRAG-oriented harness for comparing graph retrieval with non-graph baselines.
+Benchmarks the labeled multi-hop question set across the relational baselines. This now covers retrieval baselines and a no-retrieval CAG-style baseline in one harness.
 
 ## What to Expect
 
@@ -147,7 +151,7 @@ The planning details for that expansion live in [docs/planning/plan.md](docs/pla
 3. **Vector database** -- storing and searching vectors by similarity
 4. **Dense retrieval** -- the document-to-vector-to-nearest-neighbor flow used in many RAG systems
 
-Planned additions expand beyond this into hybrid retrieval, graph-based retrieval, and small-corpus no-retrieval baselines.
+The current implementation now extends beyond dense retrieval into hybrid retrieval, graph-based retrieval, and a local CAG-style no-retrieval baseline.
 
 ## Relational Dataset
 
@@ -156,6 +160,8 @@ The repository now includes a separate relational corpus in [data/relational/REA
 It is intentionally kept outside the current top-level tutorial corpus so the existing dense, lexical, and hybrid chunking benchmark remains stable while future GraphRAG work gets a dataset that actually rewards relationship-aware retrieval.
 
 The current GraphRAG implementation is deliberately lightweight: it builds a local entity-evidence graph from the relational corpus and retrieves connected evidence across hops. It is a practical baseline, not a full LLM-built knowledge graph pipeline.
+
+The current CAG-style implementation is also deliberately honest: it uses a small local Ollama model with the full relational corpus preloaded into the prompt for each question. It gives you the no-retrieval comparison point now, while leaving true KV-cache persistence as a future upgrade.
 
 ## Research Notes
 

@@ -1,0 +1,27 @@
+CodeLens Product Documentation — v3.2
+
+Overview
+CodeLens is TechVista's flagship AI code review assistant. It integrates with GitHub, GitLab, and Azure DevOps to provide real-time feedback on pull requests.
+
+Key Features
+- Automated Code Review: Analyzes diffs using fine-tuned LLMs to catch bugs, security issues, and style violations.
+- Smart Suggestions: Proposes concrete fixes, not just warnings. Developers can accept suggestions with one click.
+- Team Patterns: Learns your team's conventions over time and flags deviations.
+- Security Scanner: OWASP Top-10 checks run on every PR automatically.
+- Performance Hints: Detects N+1 queries, unbounded loops, and memory leaks in Java and Python code.
+
+Supported Languages
+Java, Python, TypeScript, Go, Rust, C#.
+
+Pricing (per seat/month)
+- Starter: $19 — up to 500 reviews/month, basic rules only.
+- Pro: $49 — unlimited reviews, custom rules, team patterns.
+- Enterprise: $89 — everything in Pro plus SSO, audit logs, on-prem deployment, and dedicated support.
+
+API Access
+CodeLens exposes a REST API at https://api.codelens.techvista.com/v3.
+Authentication uses OAuth2 with scopes: read:reviews, write:reviews, admin:settings.
+Rate limit: 1000 requests/hour for Pro and Enterprise plans.
+
+SLA
+99.9% uptime for Enterprise customers. Median review latency: 4.2 seconds per PR.

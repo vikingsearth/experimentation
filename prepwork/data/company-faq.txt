@@ -1,0 +1,22 @@
+TechVista Inc. — Company FAQ
+
+Q: When was TechVista founded?
+A: TechVista was founded in 2018 by Maria Chen and David Park in Austin, Texas.
+
+Q: What does TechVista do?
+A: TechVista builds AI-powered developer tools that help engineering teams ship code faster with fewer bugs. Our flagship product is CodeLens, a real-time code review assistant.
+
+Q: How many employees does TechVista have?
+A: As of 2025, TechVista has 340 employees across Austin (HQ), London, and Singapore.
+
+Q: Who is the current CEO?
+A: Maria Chen is the CEO and co-founder.
+
+Q: What is the engineering stack?
+A: The backend is Java 21 with Spring Boot, the frontend is React with TypeScript, and ML services run Python 3.12 with FastAPI. All services are deployed on Azure Kubernetes Service.
+
+Q: What is TechVista's annual revenue?
+A: TechVista reported $48M ARR in Q4 2025, up 62% year-over-year.
+
+Q: What is the on-call policy?
+A: Engineering teams follow a weekly on-call rotation. On-call engineers must acknowledge pages within 15 minutes. Escalation goes to the team lead after 30 minutes, and to the VP of Engineering after 1 hour.

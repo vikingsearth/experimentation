@@ -1,0 +1,13 @@
+{
+  "{{EVENT_NAME}}": [
+    {
+      "matcher": "{{MATCHER}}",
+      "hooks": [
+        {
+          "type": "{{TYPE}}",
+          "command": "{{COMMAND}}"
+        }
+      ]
+    }
+  ]
+}

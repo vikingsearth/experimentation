@@ -1,0 +1,14 @@
+{
+  "{{EVENT_NAME}}": [
+    {
+      "matcher": "{{MATCHER}}",
+      "hooks": [
+        {
+          "type": "agent",
+          "prompt": "{{PROMPT_TEXT}}",
+          "model": "{{MODEL_OR_REMOVE}}"
+        }
+      ]
+    }
+  ]
+}

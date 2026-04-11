@@ -1,0 +1,10 @@
+# Deep Agents SDK — the harness that gives your agent planning, filesystem,
+# subagents, and context management out of the box.
+deepagents
+
+# LangChain's OpenAI integration — needed because Azure AI Foundry exposes
+# an OpenAI-compatible endpoint. This lets us use AzureChatOpenAI as the model.
+langchain-openai
+
+# Load .env files for API keys
+python-dotenv

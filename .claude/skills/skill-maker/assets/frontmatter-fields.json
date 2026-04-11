@@ -1,0 +1,124 @@
+{
+  "$comment": "Machine-readable field definitions for Agent Skills frontmatter. Combines base spec (agentskills.io) with Claude Code extensions.",
+  "fields": {
+    "name": {
+      "source": "agent-skills-spec",
+      "required": true,
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Skill identifier. Must match parent directory name. Lowercase alphanumeric + hyphens.",
+      "examples": ["pdf-processing", "code-review", "data-analysis"]
+    },
+    "description": {
+      "source": "agent-skills-spec",
+      "required": true,
+      "type": "string",
+      "maxLength": 1024,
+      "description": "What the skill does + when to use it. Third-person voice. Keyword-rich for discovery.",
+      "examples": [
+        "Extracts text and tables from PDF files, fills forms, merges documents. Use when working with PDF files or document extraction.",
+        "Generates descriptive commit messages by analyzing git diffs. Use when writing commit messages or reviewing staged changes."
+      ]
+    },
+    "license": {
+      "source": "agent-skills-spec",
+      "required": false,
+      "type": "string",
+      "description": "License name or reference to bundled LICENSE file.",
+      "examples": ["Apache-2.0", "Proprietary. LICENSE.txt has complete terms"]
+    },
+    "compatibility": {
+      "source": "agent-skills-spec",
+      "required": false,
+      "type": "string",
+      "maxLength": 500,
+      "description": "Environment requirements. Only include if the skill has specific needs.",
+      "examples": [
+        "Designed for Claude Code with shell access.",
+        "Requires git, docker, jq, and access to the internet."
+      ]
+    },
+    "metadata": {
+      "source": "agent-skills-spec",
+      "required": false,
+      "type": "object",
+      "description": "Arbitrary key-value mapping. Common keys: author, version, purpose, type.",
+      "commonKeys": {
+        "author": "Creator name or team (e.g., 'nebula-aurora')",
+        "version": "Semver string (e.g., '1.0.0')",
+        "purpose": "One of: meta-skill, development, admin, utility, other",
+        "type": "Priority indicator (e.g., P0, P1, P2)"
+      }
+    },
+    "allowed-tools": {
+      "source": "agent-skills-spec",
+      "required": false,
+      "supported": false,
+      "type": "string",
+      "description": "Space-delimited list of pre-approved tools. Defined in Agent Skills spec but NOT supported by Claude Code. Do not include in frontmatter.",
+      "examples": [
+        "Read Grep Glob",
+        "Bash(git:*) Bash(npm:*) Read",
+        "Skill(commit) Skill(review-pr *)"
+      ]
+    },
+    "disable-model-invocation": {
+      "source": "claude-code",
+      "required": false,
+      "type": "boolean",
+      "default": false,
+      "description": "true = only user can invoke via /name. Removes from Claude's context. Use for side-effect workflows."
+    },
+    "user-invocable": {
+      "source": "claude-code",
+      "required": false,
+      "type": "boolean",
+      "default": true,
+      "description": "false = hidden from / menu. Only Claude can invoke. Use for background knowledge skills."
+    },
+    "argument-hint": {
+      "source": "claude-code",
+      "required": false,
+      "type": "string",
+      "description": "Autocomplete hint for expected arguments.",
+      "examples": ["[issue-number]", "[filename] [format]", "[skill-name]"]
+    },
+    "model": {
+      "source": "claude-code",
+      "required": false,
+      "type": "string",
+      "description": "Override model when this skill is active."
+    },
+    "context": {
+      "source": "claude-code",
+      "required": false,
+      "type": "string",
+      "enum": ["fork"],
+      "description": "fork = run in isolated subagent context. Skill content becomes subagent prompt."
+    },
+    "agent": {
+      "source": "claude-code",
+      "required": false,
+      "type": "string",
+      "default": "general-purpose",
+      "description": "Subagent type when context: fork. Options: Explore, Plan, general-purpose, or custom from .claude/agents/."
+    },
+    "hooks": {
+      "source": "claude-code",
+      "required": false,
+      "type": "object",
+      "description": "Hooks scoped to this skill's lifecycle."
+    }
+  },
+  "substitutions": {
+    "$ARGUMENTS": "All arguments passed when invoking the skill.",
+    "$ARGUMENTS[N]": "Specific argument by 0-based index.",
+    "$N": "Shorthand for $ARGUMENTS[N].",
+    "${CLAUDE_SESSION_ID}": "Current session ID."
+  },
+  "dynamicContext": {
+    "syntax": "!`command`",
+    "description": "Shell commands run before content is sent to Claude. Output replaces the placeholder."
+  }
+}

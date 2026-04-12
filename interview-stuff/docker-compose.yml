@@ -1,0 +1,18 @@
+services:
+  s1:
+    build: S1/.
+    ports:
+      - "3050:3050"
+    volumes:
+      - ./S1:/app
+
+  s2:
+    build: S2/.
+    ports:
+      - "3051:3051"
+    volumes:
+      - ./S2:/app
+
+volumes:
+  s1_data:
+  s2_data:

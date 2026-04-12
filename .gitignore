@@ -144,6 +144,9 @@ vite.config.ts.timestamp-*
 .venv
 .DS_Store
 *.pyc
+.python-version
+.idea/
+
 
 # Java build output
 target/

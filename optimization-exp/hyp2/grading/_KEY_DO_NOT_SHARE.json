@@ -1,0 +1,52 @@
+[
+ {
+  "report_id": "R01",
+  "brief": "01",
+  "arm": "arm-a-haiku"
+ },
+ {
+  "report_id": "R02",
+  "brief": "02",
+  "arm": "arm-b-sonnet"
+ },
+ {
+  "report_id": "R03",
+  "brief": "04",
+  "arm": "arm-a-haiku"
+ },
+ {
+  "report_id": "R04",
+  "brief": "04",
+  "arm": "arm-b-sonnet"
+ },
+ {
+  "report_id": "R05",
+  "brief": "03",
+  "arm": "arm-a-haiku"
+ },
+ {
+  "report_id": "R06",
+  "brief": "01",
+  "arm": "arm-b-sonnet"
+ },
+ {
+  "report_id": "R07",
+  "brief": "03",
+  "arm": "arm-b-sonnet"
+ },
+ {
+  "report_id": "R08",
+  "brief": "05",
+  "arm": "arm-b-sonnet"
+ },
+ {
+  "report_id": "R09",
+  "brief": "05",
+  "arm": "arm-a-haiku"
+ },
+ {
+  "report_id": "R10",
+  "brief": "02",
+  "arm": "arm-a-haiku"
+ }
+]

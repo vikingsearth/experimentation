@@ -1,0 +1,6 @@
+brief	model	subagent_tokens	tool_uses	duration_ms	findings	files_read
+01-data-model	sonnet	76524	6	55908	9	4
+02-policy-thresholds	sonnet	85973	11	100218	6	4
+03-risk-and-budget	sonnet	85336	12	176375	5	5
+04-state-and-audit	sonnet	78450	5	75164	5	3
+05-presentation-and-docs	sonnet	88685	12	136213	8	7

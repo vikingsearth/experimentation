@@ -1,0 +1,2 @@
+brief	model	attempt	input_tokens	output_tokens	turns	api_ms	wall_s	status
+02-policy-thresholds	devstral:24b	1	56837	1436	16	318221	342	ok

@@ -1,0 +1,8 @@
+brief	model	attempt	input_tokens	output_tokens	turns	api_ms	wall_s	status
+01-data-model	gemma4-12b-40k	1	58406	7625	8	1340419	1418	ok
+02-policy-thresholds	gemma4-12b-40k	1	0	0	0	0	2706	no-json
+02-policy-thresholds	gemma4-12b-40k	1	62230	15956	6	1945129	2015	ok
+03-risk-and-budget	gemma4-12b-40k	1	37380	36819	5	2814593	2886	ok
+04-state-and-audit	gemma4-12b-40k	1	19250	41077	5	2997010	3059	ok
+05-presentation-and-docs	gemma4-12b-40k	1	0	0	0	0	6295	no-json
+05-presentation-and-docs	gemma4-12b-40k	2	0	0	0	0	6061	no-json

@@ -1,0 +1,6 @@
+brief	model	subagent_tokens	tool_uses	duration_ms	findings	files_read
+01-data-model	haiku	66366	10	74972	10	6
+02-policy-thresholds	haiku	64130	12	61984	6	4
+03-risk-and-budget	haiku	63879	8	81228	7	4
+04-state-and-audit	haiku	67708	8	66772	12	5
+05-presentation-and-docs	haiku	75590	15	90557	19	11

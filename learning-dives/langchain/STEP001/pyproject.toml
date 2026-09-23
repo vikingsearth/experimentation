@@ -1,0 +1,12 @@
+[project]
+name = "step001-first-llm-call"
+version = "0.1.0"
+description = "STEP001 — The absolute minimum LangChain setup: load a model, send a message, get a reply."
+requires-python = ">=3.10"
+
+dependencies = [
+    "langchain",
+    "langchain-azure-ai",
+    "azure-core",
+    "python-dotenv",
+]

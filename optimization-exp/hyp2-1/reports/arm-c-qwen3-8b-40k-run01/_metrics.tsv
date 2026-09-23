@@ -1,0 +1,6 @@
+brief	model	attempt	input_tokens	output_tokens	turns	api_ms	wall_s	status
+01-data-model	qwen3-8b-40k	1	6901	1853	2	104806	130	ok
+02-policy-thresholds	qwen3-8b-40k	1	14162	2406	3	157757	190	ok
+03-risk-and-budget	qwen3-8b-40k	1	1967	1188	1	60047	80	ok
+04-state-and-audit	qwen3-8b-40k	1	1974	959	1	49477	70	ok
+05-presentation-and-docs	qwen3-8b-40k	1	10812	2968	3	161592	210	ok

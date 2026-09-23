@@ -1,0 +1,3 @@
+brief	model	attempt	input_tokens	output_tokens	turns	api_ms	wall_s	status
+01-data-model	gemma4-12b-40k	1	13087	969	4	96526	121	ok
+03-risk-and-budget	gemma4-12b-40k	1	37156	1000	6	154619	170	ok

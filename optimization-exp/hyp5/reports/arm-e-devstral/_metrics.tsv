@@ -1,0 +1,8 @@
+brief	model	attempt	input_tokens	output_tokens	turns	api_ms	wall_s	status
+01-data-model	devstral:24b	1	6358	104	2	77678	83	malformed
+01-data-model	devstral:24b	2	6087	179	3	26142	102	malformed
+02-policy-thresholds	devstral:24b	1	26704	853	5	285586	325	ok
+03-risk-and-budget	devstral:24b	1	10192	108	2	115022	120	malformed
+03-risk-and-budget	devstral:24b	2	49167	1132	7	256487	281	ok
+04-state-and-audit	devstral:24b	1	14487	946	5	172293	190	ok
+05-presentation-and-docs	devstral:24b	1	74924	907	11	286703	310	ok

@@ -10,10 +10,12 @@ LIMITS = {
   'max_s_heldout': 30.0,
   'clip_frac': 1e-4,
   'noise_dbfs': -55.0,
-  'speech_lo_dbfs': -32.0,
+  'speech_lo_dbfs': -40.0,
   'speech_hi_dbfs': -12.0,
   'snr_db': 30.0,
   'pad_s': 0.15,
+  'skip_start_s': 0.3,
+  'skip_end_s': 0.15,
   'max_wer': 0.15
 }
 
@@ -54,19 +56,46 @@ def transcribe(y, sr):
   return out['text'].strip()
 
 
+def speech_bounds(frames, noise, sr, hop=512):
+  """Speech is energy 15 dB over the room's floor for at least 150 ms, so a key click or a bump never counts as speech."""
+  active = 20 * np.log10(np.maximum(frames, 1e-10)) > noise + 15
+  need = int(0.15 * sr / hop)
+  runs, start = [], None
+  for k, on in enumerate(np.append(active, False)):
+    if on and start is None:
+      start = k
+    elif not on and start is not None:
+      if k - start >= need:
+        runs.append((start, k))
+      start = None
+  if not runs:
+    return np.zeros_like(active), 0, 0
+  a, b = runs[0][0], runs[-1][1]
+  keep = np.zeros_like(active)
+  keep[a:b] = active[a:b]
+  return keep, a * hop, b * hop
+
+
 def validate(path, line):
   """Audio gates first, so a bad room fails fast before Whisper runs."""
   y, sr = sf.read(path, dtype='float32')
   if y.ndim > 1:
     y = y.mean(axis=1)
   fails, m = [], {'sr': sr, 'total_s': round(len(y) / sr, 2)}
+  # The space-bar presses that start and stop a take land in its ends, often louder than the voice.
+  head, end = int(LIMITS['skip_start_s'] * sr), int(LIMITS['skip_end_s'] * sr)
+  if len(y) > 4 * (head + end):
+    y = y[head:len(y) - end]
 
   clip = float(np.mean(np.abs(y) >= 0.999))
   m['peak_dbfs'] = round(dbfs(np.max(np.abs(y))), 1)
   if clip > LIMITS['clip_frac']:
     fails.append('clipping - move back from the mic or turn the input gain down')
 
-  _, (a, b) = librosa.effects.trim(y, top_db=40, frame_length=2048, hop_length=512)
+  frames = librosa.feature.rms(y=y, frame_length=2048, hop_length=512)[0]
+  noise = dbfs(np.percentile(frames, 10))
+  active, a, b = speech_bounds(frames, noise, sr)
+  b = min(b, len(y))
   speech_s = (b - a) / sr
   m['speech_s'] = round(speech_s, 2)
   max_s = LIMITS['max_s_heldout'] if line['heldout'] else LIMITS['max_s_free'] if line['free'] else LIMITS['max_s']
@@ -74,12 +103,14 @@ def validate(path, line):
     fails.append('too short - %.1f s of speech, needs at least %.0f s' % (speech_s, LIMITS['min_s']))
   if speech_s > max_s:
     fails.append('too long - %.1f s of speech, max is %.0f s' % (speech_s, max_s))
-  if a / sr < LIMITS['pad_s'] or (len(y) - b) / sr < LIMITS['pad_s']:
-    fails.append('no breathing room - leave a beat of silence before you start and after you finish')
+  lead, tail = a / sr, (len(y) - b) / sr
+  m.update(lead_s=round(lead, 2), tail_s=round(tail, 2))
+  if lead < LIMITS['pad_s']:
+    fails.append('no silence before - wait a beat after pressing space (%.2f s, needs %.2f)' % (lead, LIMITS['pad_s']))
+  if tail < LIMITS['pad_s']:
+    fails.append('no silence after - wait a beat before pressing space (%.2f s, needs %.2f)' % (tail, LIMITS['pad_s']))
 
-  frames = librosa.feature.rms(y=y, frame_length=2048, hop_length=512)[0]
-  noise = dbfs(np.percentile(frames, 10))
-  speech = dbfs(np.sqrt(np.mean(y[a:b] ** 2))) if b > a else -100.0
+  speech = dbfs(np.sqrt(np.mean(frames[active] ** 2))) if active.any() else -100.0
   m.update(noise_dbfs=round(noise, 1), speech_dbfs=round(speech, 1), snr_db=round(speech - noise, 1))
   if noise > LIMITS['noise_dbfs']:
     fails.append('noisy room - background at %.0f dBFS, needs under %.0f (fan, aircon, traffic?)' % (noise, LIMITS['noise_dbfs']))

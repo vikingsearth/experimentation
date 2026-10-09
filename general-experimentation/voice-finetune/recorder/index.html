@@ -144,7 +144,7 @@ function showResult(r) {
   last = r;
   $('fails').innerHTML = (r.fails || []).map((f) => `<li>${f.replace(/</g, '&lt;')}</li>`).join('');
   const m = r.metrics || {};
-  $('metrics').textContent = ['speech_s', 'speech_dbfs', 'noise_dbfs', 'snr_db', 'peak_dbfs', 'wer']
+  $('metrics').textContent = ['speech_s', 'lead_s', 'tail_s', 'speech_dbfs', 'noise_dbfs', 'snr_db', 'peak_dbfs', 'wer']
     .filter((k) => m[k] !== undefined).map((k) => k + ' ' + m[k]).join('   ');
 }
 

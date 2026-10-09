@@ -15,7 +15,7 @@ if os.environ.get('VOICE'):
 def say(i):
   torch.manual_seed(int(cfg['seed']) + i)
   parts = []
-  for chunk in [c.strip() for c in L[i - 1].split('|') if c.strip()]:
+  for chunk in [c.strip() for c in re.split(r'\s*\|\s*|(?<=[,.])\s+', L[i - 1]) if c.strip()]:
     w = m.generate(chunk, exaggeration=cfg['exaggeration'], cfg_weight=cfg['cfg'], temperature=cfg['temperature'])
     parts += [w, torch.zeros(1, int(m.sr * cfg['gap']))]
   w = torch.cat([torch.zeros(1, int(m.sr * 0.15))] + parts[:-1], dim=1)

@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>voice recorder</title>
+<style>
+:root{--bg:#0b0e12;--panel:#121820;--line:#1f2a36;--fg:#e8edf2;--dim:#8a98a8;--ok:#3dd6c4;--bad:#ff6b6b;--warn:#ffb020}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:24px 16px 48px}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+h1{font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin:0}
+select{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 8px;max-width:340px}
+.cats{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+.cat{font-size:13px;padding:4px 10px;border-radius:999px;background:var(--panel);border:1px solid var(--line);color:var(--dim)}
+.cat.done{color:var(--ok);border-color:#1f4a45}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px}
+.meta{font-size:13px;color:var(--dim);display:flex;gap:14px;flex-wrap:wrap}
+.text{font-size:30px;line-height:1.4;margin:16px 0 8px}
+.hint{font-size:14px;color:var(--dim)}
+.badge{font-weight:600}
+.badge.accepted{color:var(--ok)}.badge.rejected{color:var(--bad)}.badge.pending{color:var(--dim)}
+.meter{height:8px;border-radius:4px;background:#1a232d;overflow:hidden;margin:20px 0 8px}
+.meter div{height:100%;width:0;background:var(--ok);transition:width .05s}
+.meter.hot div{background:var(--bad)}
+.state{font-size:18px;margin:10px 0;min-height:28px}
+.rec{color:var(--bad)}.busy{color:var(--warn)}
+ul.fails{margin:8px 0;padding-left:20px;color:var(--bad)}
+.metrics{font:13px ui-monospace,monospace;color:var(--dim)}
+textarea{width:100%;min-height:70px;background:#0b0e12;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit}
+.keys{margin-top:22px;font-size:13px;color:var(--dim)}
+kbd{font:12px ui-monospace,monospace;padding:2px 6px;border:1px solid var(--line);border-radius:5px;background:#0b0e12;color:var(--fg)}
+.warnbox{color:var(--warn);font-size:14px;margin-top:8px}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>voice recorder <span id="total"></span></h1>
+  <select id="mic" aria-label="Microphone"></select>
+</header>
+<div class="cats" id="cats"></div>
+<section class="card">
+  <div class="meta"><span id="pos"></span><span id="category"></span><span id="lineid"></span><span class="badge" id="badge"></span></div>
+  <div class="text" id="text"></div>
+  <div class="hint" id="hint"></div>
+  <div class="meter" id="meter"><div></div></div>
+  <div class="state" id="state">press <kbd>space</kbd> to record</div>
+  <ul class="fails" id="fails"></ul>
+  <div class="metrics" id="metrics"></div>
+  <div id="freebox" hidden>
+    <p class="hint">transcript - fix anything Whisper misheard, then <kbd>ctrl</kbd>+<kbd>enter</kbd> to save it</p>
+    <textarea id="transcript"></textarea>
+  </div>
+  <div class="warnbox" id="warn"></div>
+  <div class="keys">
+    <kbd>space</kbd> record / stop &nbsp; <kbd>p</kbd> play back &nbsp; <kbd>enter</kbd> validate
+    &nbsp; <kbd>o</kbd> accept anyway (read mismatch only) &nbsp; <kbd>&larr;</kbd> <kbd>&rarr;</kbd> move &nbsp; <kbd>n</kbd> next pending
+  </div>
+</section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const SR = 48000;
+let lines = [], i = 0, ctx, node, stream, recording = false, chunks = [], take = null, busy = false, last = null;
+
+const worklet = `class Rec extends AudioWorkletProcessor {
+  process(inputs) { const c = inputs[0][0]; if (c) this.port.postMessage(c.slice(0)); return true; }
+}
+registerProcessor('rec', Rec);`;
+
+async function openMic(deviceId) {
+  if (stream) stream.getTracks().forEach((t) => t.stop());
+  // Browser voice processing would be baked into the trained voice, so all of it is off.
+  stream = await navigator.mediaDevices.getUserMedia({ audio: {
+    deviceId: deviceId ? { exact: deviceId } : undefined, channelCount: 1,
+    echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  const s = stream.getAudioTracks()[0].getSettings();
+  const on = ['echoCancellation', 'noiseSuppression', 'autoGainControl'].filter((k) => s[k]);
+  $('warn').textContent = on.length ? 'browser kept ' + on.join(', ') + ' on - try another browser' : '';
+  if (!ctx) {
+    ctx = new AudioContext({ sampleRate: SR });
+    await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([worklet], { type: 'application/javascript' })));
+  }
+  if (node) node.disconnect();
+  node = new AudioWorkletNode(ctx, 'rec');
+  node.port.onmessage = (e) => {
+    const peak = e.data.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+    $('meter').firstChild.style.width = Math.min(100, peak * 100) + '%';
+    $('meter').classList.toggle('hot', peak > 0.9);
+    if (recording) chunks.push(e.data);
+  };
+  ctx.createMediaStreamSource(stream).connect(node);
+  const mute = ctx.createGain(); mute.gain.value = 0; node.connect(mute).connect(ctx.destination);
+  const devs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput');
+  $('mic').innerHTML = devs.map((d) => `<option value="${d.deviceId}">${d.label || 'microphone'}</option>`).join('');
+  $('mic').value = stream.getAudioTracks()[0].getSettings().deviceId;
+}
+
+function wav(samples) {
+  const buf = new ArrayBuffer(44 + samples.length * 2), v = new DataView(buf);
+  const str = (o, s) => [...s].forEach((c, k) => v.setUint8(o + k, c.charCodeAt(0)));
+  str(0, 'RIFF'); v.setUint32(4, 36 + samples.length * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, SR, true);
+  v.setUint32(28, SR * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, 'data');
+  v.setUint32(40, samples.length * 2, true);
+  samples.forEach((x, k) => v.setInt16(44 + k * 2, Math.max(-1, Math.min(1, x)) * 0x7fff, true));
+  return new Blob([buf], { type: 'audio/wav' });
+}
+
+function concat(parts) {
+  const out = new Float32Array(parts.reduce((n, p) => n + p.length, 0));
+  let o = 0; parts.forEach((p) => { out.set(p, o); o += p.length; });
+  return out;
+}
+
+const play = (blob) => blob && new Audio(URL.createObjectURL(blob)).play();
+const nextPending = () => { const k = lines.findIndex((x, k) => k > i && x.status !== 'accepted'); return k < 0 ? lines.findIndex((x) => x.status !== 'accepted') : k; };
+const say = (html, cls = '') => { $('state').className = 'state ' + cls; $('state').innerHTML = html; };
+
+function render() {
+  const l = lines[i];
+  const train = lines.filter((x) => !x.heldout);
+  $('total').textContent = '- ' + train.filter((x) => x.status === 'accepted').length + ' / ' + train.length + ' training, '
+    + lines.filter((x) => x.heldout && x.status === 'accepted').length + ' / ' + lines.filter((x) => x.heldout).length + ' held-out';
+  const cats = [...new Set(lines.map((x) => x.category))];
+  $('cats').innerHTML = cats.map((c) => {
+    const xs = lines.filter((x) => x.category === c), n = xs.filter((x) => x.status === 'accepted').length;
+    return `<span class="cat ${n === xs.length ? 'done' : ''}">${c} ${n}/${xs.length}</span>`;
+  }).join('');
+  $('pos').textContent = (i + 1) + ' / ' + lines.length;
+  $('category').textContent = l.category;
+  $('lineid').textContent = l.id;
+  $('badge').textContent = l.status; $('badge').className = 'badge ' + l.status;
+  $('text').textContent = l.text;
+  $('hint').textContent = l.free ? 'talk about this for ten to fifteen seconds, the way you normally would'
+    : 'read it through first, then say it the way you would tell it';
+  $('freebox').hidden = !(l.free && l.status === 'accepted');
+  if (l.free && l.status === 'accepted') $('transcript').value = l.last.transcript || '';
+}
+
+function showResult(r) {
+  last = r;
+  $('fails').innerHTML = (r.fails || []).map((f) => `<li>${f.replace(/</g, '&lt;')}</li>`).join('');
+  const m = r.metrics || {};
+  $('metrics').textContent = ['speech_s', 'speech_dbfs', 'noise_dbfs', 'snr_db', 'peak_dbfs', 'wer']
+    .filter((k) => m[k] !== undefined).map((k) => k + ' ' + m[k]).join('   ');
+}
+
+async function load() {
+  lines = await (await fetch('/api/state')).json();
+  render();
+}
+
+function move(to) {
+  if (recording || busy) return;
+  i = Math.max(0, Math.min(lines.length - 1, to));
+  take = null; last = null; showResult({}); say('press <kbd>space</kbd> to record'); render();
+}
+
+async function validate() {
+  if (!take || busy) return;
+  busy = true; say('validating...', 'busy');
+  const r = await (await fetch('/api/validate?id=' + lines[i].id, { method: 'POST', body: take })).json();
+  busy = false; showResult(r); await load();
+  if (r.status === 'accepted') {
+    say('accepted - crossed off. <kbd>n</kbd> for the next one', '');
+    take = null;
+    if (!lines[i].free) setTimeout(() => { const k = nextPending(); if (k >= 0) move(k); }, 900);
+  } else say('rejected - fix the above and press <kbd>space</kbd> to record again', 'rec');
+}
+
+async function override(transcript) {
+  if (!last || busy) return;
+  const r = await (await fetch('/api/override?id=' + lines[i].id + '&take=' + last.take,
+    { method: 'POST', body: JSON.stringify({ transcript }) })).json();
+  showResult(r); await load(); say('accepted by hand');
+}
+
+addEventListener('keydown', async (e) => {
+  if (e.target.tagName === 'TEXTAREA') {
+    if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); last = lines[i].last && { ...lines[i].last, take: lines[i].last.take.split('/').pop() }; await override($('transcript').value); }
+    return;
+  }
+  if (e.key === ' ') {
+    e.preventDefault();
+    if (busy) return;
+    if (!ctx) await openMic();
+    if (ctx.state === 'suspended') await ctx.resume();
+    if (!recording) { chunks = []; recording = true; take = null; showResult({}); say('&#9679; recording - press <kbd>space</kbd> to stop', 'rec'); }
+    else { recording = false; take = wav(concat(chunks)); say('playing back - <kbd>enter</kbd> to validate, <kbd>space</kbd> to redo'); play(take); }
+  } else if (e.key === 'Enter') { e.preventDefault(); validate(); }
+  else if (e.key === 'p') play(take);
+  else if (e.key === 'o' && last && last.status === 'rejected' && last.fails.every((f) => f.startsWith('read differs'))) override();
+  else if (e.key === 'ArrowRight') move(i + 1);
+  else if (e.key === 'ArrowLeft') move(i - 1);
+  else if (e.key === 'n') { const k = nextPending(); if (k >= 0) move(k); }
+});
+
+$('mic').onchange = () => openMic($('mic').value);
+load().then(() => move(Math.max(0, lines.findIndex((x) => x.status !== 'accepted'))));
+</script>
+</body>
+</html>

@@ -96,7 +96,9 @@ def validate(path, line):
     fails.append('clipping - move back from the mic or turn the input gain down')
 
   frames = librosa.feature.rms(y=y, frame_length=2048, hop_length=512)[0]
-  noise = dbfs(np.percentile(frames, 10))
+  # The room's floor is its quietest 150 ms; a percentile would count soft speech as noise.
+  win = max(int(0.15 * sr / 512), 1)
+  noise = dbfs(np.sqrt(np.convolve(frames ** 2, np.ones(win) / win, 'valid').min()))
   active, a, b = speech_bounds(frames, noise, sr)
   b = min(b, len(y))
   speech_s = (b - a) / sr

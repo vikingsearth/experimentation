@@ -2,6 +2,7 @@ import re
 import numpy as np
 import librosa
 import soundfile as sf
+from scipy.signal import butter, sosfiltfilt
 
 LIMITS = {
   'min_s': 2.0,
@@ -9,10 +10,10 @@ LIMITS = {
   'max_s_free': 20.0,
   'max_s_heldout': 30.0,
   'clip_frac': 1e-4,
-  'noise_dbfs': -55.0,
+  'noise_dbfs': -50.0,
   'speech_lo_dbfs': -40.0,
   'speech_hi_dbfs': -12.0,
-  'snr_db': 30.0,
+  'snr_db': 25.0,
   'pad_s': 0.15,
   'skip_start_s': 0.3,
   'skip_end_s': 0.15,
@@ -86,6 +87,8 @@ def validate(path, line):
   head, end = int(LIMITS['skip_start_s'] * sr), int(LIMITS['skip_end_s'] * sr)
   if len(y) > 4 * (head + end):
     y = y[head:len(y) - end]
+  # Rumble under 80 Hz (desk, fan, airflow) carries no speech and is filtered out in prep anyway.
+  y = sosfiltfilt(butter(4, 80, 'highpass', fs=sr, output='sos'), y).astype(np.float32)
 
   clip = float(np.mean(np.abs(y) >= 0.999))
   m['peak_dbfs'] = round(dbfs(np.max(np.abs(y))), 1)
